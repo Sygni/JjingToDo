@@ -10,14 +10,20 @@ import SwiftUI
 
 struct MainTodoView: View {
     @State private var newTask: String = ""
-    @State private var tasks: [Task] = []
     @State private var points: Int = 0
     @State private var totalPoints: Int = 0
-    @State private var redemptions: [Redemption] = []
+
+    //    @State private var tasks: [Task] = []  // 20250325 ContentView로 이동
+    @Binding var tasks: [Task]
+    //    @State private var redemptions: [Redemption] = [] // 20250325 ContentView로 이동
+    @Binding var redemptions: [Redemption]
     
     //Delete alert popup
     @State private var taskToDelete: Task? = nil
     @State private var showDeleteAlert = false
+    
+    //Reward system
+    @State private var selectedRewardLevel: RewardLevel = .easy //default: 1 (easy)
     
     let redemptionKey = "savedRedemptions"
     let taskKey = "savedTasks"
@@ -54,8 +60,9 @@ struct MainTodoView: View {
                 Button("💸 5,000원 쿠폰 받기") {
                     let redemption = Redemption(id: UUID(), amount: 5000, date: Date())
                     redemptions.append(redemption)
+                    //print(redemptions.count)    //TEST
                     points -= 5000
-                    saveData()
+                    saveData(tasks: tasks, redemptions: redemptions)
                 }
                 .padding(8)
                 .background(Color.orange)
@@ -67,8 +74,9 @@ struct MainTodoView: View {
                 Button("💸 11,000원 쿠폰 받기") {
                     let redemption = Redemption(id: UUID(), amount: 10000, date: Date())
                     redemptions.append(redemption)
+                    //print(redemptions.count)    //TEST
                     points -= 10000
-                    saveData()
+                    saveData(tasks: tasks, redemptions: redemptions)
                 }
                 .padding(8)
                 .background(Color.purple)
@@ -80,8 +88,9 @@ struct MainTodoView: View {
             /*Button("디버그 포인트") {
                 points = 10000
                 totalPoints = 10000
-                saveData()
-            }*/
+                saveData(tasks: tasks, redemptions: redemptions)
+            }
+             */
             #endif
             
             Text("누적 기록: \(totalPoints)")
@@ -93,12 +102,13 @@ struct MainTodoView: View {
                 TextField("할 일을 입력하세요", text: $newTask)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .submitLabel(.done)
+                
                 Button("추가") {
                     if !newTask.isEmpty {
-                        let task = Task(title: newTask)
+                        let task = Task(title: newTask, reward: selectedRewardLevel)
                         tasks.append(task)
                         newTask = ""
-                        saveData()
+                        saveData(tasks: tasks, redemptions: redemptions)
                     }
                 }
                 .padding(.horizontal)
@@ -109,6 +119,17 @@ struct MainTodoView: View {
             }
             .padding()
 
+            Picker("난이도", selection: $selectedRewardLevel) {
+                Text(RewardLevel.easy.label)
+                    .tag(RewardLevel.easy)
+                Text(RewardLevel.normal.label)
+                    .tag(RewardLevel.normal)
+                Text(RewardLevel.hard.label)
+                    .tag(RewardLevel.hard)
+            }
+            .pickerStyle(SegmentedPickerStyle())  // 세그먼트 스타일로 보이게
+            //.foregroundColor(Color.mint)      // 안 먹힘.. WHY???
+            //.pickerStyle(MenuPickerStyle())  // 스타일을 Menu로 변경
             
             List {
                 ForEach(sortedTasks.indices, id: \.self) { index in
@@ -121,12 +142,14 @@ struct MainTodoView: View {
                         }) {
 
                             Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(task.isCompleted ? Color(hex: "79e5cb") : .gray)
+                                //.foregroundColor(task.isCompleted ? Color(hex: "79e5cb") : .gray)
+                                .foregroundColor(task.isCompleted ? task.reward.color : .gray)
                         }
 
                         Text(task.title)
                             .strikethrough(task.isCompleted)
-                            .foregroundColor(task.isCompleted ? .gray : .primary)
+                            //.foregroundColor(task.isCompleted ? .gray : .primary)
+                            .foregroundColor(task.isCompleted ? .gray : task.reward.color)
                     }
                 }
                 .onDelete { offsets in
@@ -148,11 +171,14 @@ struct MainTodoView: View {
         }
         .padding()
         .onAppear {
-            loadData()
+            (tasks, redemptions) = loadData()
         }
 
     }
 
+    
+/*
+    // 20250325 ContentView.swift로 이동
     func saveData() {
         if let encodedTasks = try? JSONEncoder().encode(tasks) {
             UserDefaults.standard.set(encodedTasks, forKey: taskKey)
@@ -168,6 +194,7 @@ struct MainTodoView: View {
         UserDefaults.standard.synchronize()
     }
 
+ // 20250325 ContentView.swift로 이동
     func loadData() {
         if let savedTasks = UserDefaults.standard.data(forKey: taskKey),
            let decodedTasks = try? JSONDecoder().decode([Task].self, from: savedTasks) {
@@ -181,20 +208,21 @@ struct MainTodoView: View {
             redemptions = decodedRedemptions
         }
     }
+ */
     
     func toggleTask(_ task: Task) {
         if let i = tasks.firstIndex(where: { $0.id == task.id }) {
             tasks[i].isCompleted.toggle()
             if tasks[i].isCompleted {
-                points += 100
-                totalPoints += 100
+                points += task.reward.points
+                totalPoints += task.reward.points
                 tasks[i].completedAt = Date()
             } else {
-                points -= 100
-                totalPoints -= 100
+                points -= task.reward.points
+                totalPoints -= task.reward.points
                 tasks[i].completedAt = nil
             }
-            saveData()
+            saveData(tasks: tasks, redemptions: redemptions)
         }
     }
     
@@ -210,7 +238,7 @@ struct MainTodoView: View {
                 tasks.remove(at: originalIndex)
             }
         }
-        saveData()
+        saveData(tasks: tasks, redemptions: redemptions)
     }
     
     func deleteTask(_ task: Task) {
@@ -220,7 +248,7 @@ struct MainTodoView: View {
                 totalPoints -= 100
             }
             tasks.remove(at: index)
-            saveData()
+            saveData(tasks: tasks, redemptions: redemptions)
         }
     }
 }
