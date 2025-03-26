@@ -25,6 +25,11 @@ struct MainTodoView: View {
     //Reward system
     @State private var selectedRewardLevel: RewardLevel = .easy //default: 1 (easy)
     
+    //Edit
+    @State private var taskToEdit: Task? = nil
+    @State private var editedTitle: String = ""
+    @State private var showEditAlert = false
+    
     let redemptionKey = "savedRedemptions"
     let taskKey = "savedTasks"
     let pointKey = "savedPoints"
@@ -151,7 +156,25 @@ struct MainTodoView: View {
                             //.foregroundColor(task.isCompleted ? .gray : .primary)
                             .foregroundColor(task.isCompleted ? .gray : task.reward.color)
                     }
+                    .swipeActions(edge: .trailing) {
+                        Button {
+                            taskToEdit = task
+                            editedTitle = task.title
+                            showEditAlert = true
+                        } label: {
+                            Label("수정", systemImage: "pencil")
+                        }
+                        .tint(.blue)
+                        
+                        Button(role: .destructive) {
+                            taskToDelete = task
+                            showDeleteAlert = true
+                        } label: {
+                            Label("삭제", systemImage: "trash")
+                        }
+                    }
                 }
+                /* 20250326 스와이프에 '수정' 추가하면서 구조 변경하고 이 부분은 삭제
                 .onDelete { offsets in
                     if let index = offsets.first {
                         let task = sortedTasks[index]
@@ -159,6 +182,7 @@ struct MainTodoView: View {
                         showDeleteAlert = true
                     }
                 }
+                 */
             }
             .alert("이 항목을 삭제할까요?", isPresented: $showDeleteAlert, presenting: taskToDelete) { task in
                 Button("삭제", role: .destructive) {
@@ -166,9 +190,32 @@ struct MainTodoView: View {
                 }
                 Button("취소", role: .cancel) { }
             } message: { task in
-                Text("\"\(task.title)\"를 삭제하면 복구할 수 없습니다.")
+                //Text("\"\(task.title)\"를 삭제하면 복구할 수 없습니다.")
+                Text("항목을 삭제하면 복구할 수 없습니다.")
             }
         }
+        .alert("할 일 수정", isPresented: $showEditAlert, actions: {
+            TextField("제목", text: $editedTitle)
+
+            Button("저장", role: .none) {
+                if let taskToEdit = taskToEdit,
+                   let index = tasks.firstIndex(where: { $0.id == taskToEdit.id }) {
+                    tasks[index] = Task(
+                        id: taskToEdit.id,
+                        title: editedTitle,
+                        isCompleted: taskToEdit.isCompleted,
+                        createdAt: taskToEdit.createdAt,
+                        completedAt: taskToEdit.completedAt,
+                        reward: taskToEdit.reward
+                    )
+                    saveData(tasks: tasks, redemptions: redemptions)
+                }
+            }
+
+            Button("취소", role: .cancel) { }
+        }, message: {
+            Text("할 일 제목을 수정하세요")
+        })
         .padding()
         .onAppear {
             (tasks, redemptions) = loadData()
