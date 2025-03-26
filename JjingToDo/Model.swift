@@ -60,7 +60,7 @@ enum RewardLevel: Int, Codable {
 
     var color: Color {
         switch self {
-        case .easy: return .black
+        case .easy: return .primary
         case .normal: return .mint
         case .hard: return .yellow
         }

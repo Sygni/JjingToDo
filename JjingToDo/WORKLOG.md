@@ -13,7 +13,7 @@
 - GitHub 저장소 연결 완료
 - RewardLevel enum 도입하여 보상 구조 개선
 - Picker로 보상 선택 UI 추가
-- 포인트 계산 방식 간소화
+- 포인트 계산 방식 간소화 (enum 정리)
 - saveData 구조 정리 (ContentView.swift로 이동)
 - 보상 환전 체크 & 정렬 기능 추가
 
