@@ -26,6 +26,7 @@
   - 버튼에 아이콘 추가 및 색상 통일
 
 ## 2025-03-27
+버전 1.1 / 빌드 20250327 업데이트 (CoreData 리팩토링)
 - ✅ Core Data 전환 완료
   - 기존 UserDefaults 기반 로직 완전히 제거
   - TaskEntity / RedemptionEntity 정의 및 .xcdatamodel 구성
