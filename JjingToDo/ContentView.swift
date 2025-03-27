@@ -2,18 +2,20 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @State private var tasks: [Task] = []
+    //@State private var tasks: [Task] = []     // 20250327 CoreData 추가로 리팩토링 - TaskEntity 기반으로 변경
     @State private var redemptions: [Redemption] = []
     
     var body: some View {
         TabView {
-            MainTodoView(tasks: $tasks, redemptions: $redemptions)
+            //MainTodoView(tasks: $tasks, redemptions: $redemptions)    // 20250327
+            MainTodoView(redemptions: $redemptions)
                 .tabItem {
                     Label("이겨내🔥", systemImage: "checkmark.circle")
                 }
                 //.tint(Color(hex: "#68BBE3"))
 
-            RedemptionHistoryView(tasks: $tasks, redemptions: $redemptions)
+            //RedemptionHistoryView(tasks: $tasks, redemptions: $redemptions)   // 20250327
+            RedemptionHistoryView()
                 .tabItem {
                     Label("보상 기록", systemImage: "list.bullet.rectangle")
                 }

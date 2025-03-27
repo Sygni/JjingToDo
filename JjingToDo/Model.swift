@@ -37,12 +37,12 @@ struct Redemption: Identifiable, Codable {
     var isUsed: Bool = false  // ✅ 사용 여부
 }
 
-enum RewardLevel: Int, Codable {
+enum RewardLevel: Int, Codable, CaseIterable {
     case easy = 1
     case normal = 2
     case hard = 3
 
-    var points: Int {
+    var pointValue: Int {
         switch self {
         case .easy: return 100
         case .normal: return 300
