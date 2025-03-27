@@ -25,3 +25,16 @@
   - 수정 시 텍스트 필드 팝업으로 제목 편집 가능
   - 버튼에 아이콘 추가 및 색상 통일
 
+## 2025-03-27
+- ✅ Core Data 전환 완료
+  - 기존 UserDefaults 기반 로직 완전히 제거
+  - TaskEntity / RedemptionEntity 정의 및 .xcdatamodel 구성
+  - 투두 추가, 수정, 삭제, 완료처리, 보상 쿠폰 기능 모두 Core Data로 연결
+  - TaskEntity에 rewardLevel, completedAt 등 커스텀 프로퍼티 포함
+  - safeTitle / reward 등 확장 기능도 따로 정리
+- 🔁 기존 UI 흐름 대부분 유지하면서 내부 저장 방식만 변경
+- 🧹 불필요한 saveData/loadData 함수 및 구 코드 제거
+- 🧪 시뮬레이터 / 실기기 테스트 모두 완료
+- 🐛 Core Data 연동 과정 중 발생한 에러들 해결 (중복 Identifiable, 빌드 경로 문제 등)
+- 📁 코드 구조 일부 정리 (뷰 컴포넌트 분할)
+- 💾 안정적인 상태로 커밋 + push 완료 (Git 충돌도 해결함!)
