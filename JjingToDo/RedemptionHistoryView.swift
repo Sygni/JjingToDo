@@ -40,56 +40,69 @@ struct RedemptionHistoryView: View {
             
             // 20250327 CoreData 추가로 리팩토링 - 삭제
             /*
-            let sortedRedemptions = redemptions.sorted {
-                if $0.isUsed == $1.isUsed {
-                    return $0.date > $1.date  // 같은 사용 상태일 땐 최근 순
-                } else {
-                    return !$0.isUsed  // 미사용이 먼저
-                }
-            }
+             let sortedRedemptions = redemptions.sorted {
+             if $0.isUsed == $1.isUsed {
+             return $0.date > $1.date  // 같은 사용 상태일 땐 최근 순
+             } else {
+             return !$0.isUsed  // 미사용이 먼저
+             }
+             }
              */
-            
-            List(sortedRedemptions) { redemption in
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("💸 \(redemption.amount)원 쿠폰")
-                            .font(.headline)
-                        Text(redemption.isUsed ? "☑️ 사용 완료" : "🏆 미사용")
-                            .font(.caption)
-                            .foregroundColor(redemption.isUsed ? .gray : .orange)
-                        //Text(redemption.date.formatted(date: .abbreviated, time: .shortened)) // 20250327
-                        Text(redemption.createdAt?.formatted(date: .abbreviated, time: .shortened) ?? "")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                    }
-
-                    Spacer()  // 우측 밀어주기
-
-                    if !redemption.isUsed {
-                        Button(action: {
-                            markRedemptionUsed(redemption)
-                        }) {
-                            Text("사용")
-                                .font(.subheadline)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(Color(hex: "#79e5cb"))
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
+            VStack(spacing: 0) {
+                List(sortedRedemptions) { redemption in
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("💸 \(redemption.amount + 1000)원 쿠폰")
+                                .font(.headline)
+                            Text(redemption.isUsed ? "☑️ 사용 완료" : "🏆 미사용")
+                                .font(.caption)
+                                .foregroundColor(redemption.isUsed ? .gray : .orange)
+                            //Text(redemption.date.formatted(date: .abbreviated, time: .shortened)) // 20250327
+                            Text(redemption.createdAt?.formatted(date: .abbreviated, time: .shortened) ?? "")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        
+                        Spacer()  // 우측 밀어주기
+                        
+                        if !redemption.isUsed {
+                            Button(action: {
+                                markRedemptionUsed(redemption)
+                            }) {
+                                Text("사용")
+                                    .font(.subheadline)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Color(hex: "#79e5cb"))
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            }
                         }
                     }
+                    .padding(.vertical, 4)
                 }
-                .padding(.vertical, 4)
+                
+#if DEBUG
+                Text(versionString)
+                    .font(.caption2)
+                    .foregroundColor(.gray)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 8)
+#endif
             }
         }
-        /*
-        .onAppear {
-            loadRedemptions()
-        }
-        */
         .navigationTitle("쿠폰 교환 기록")
     }
-
+ 
+#if DEBUG
+    // 버전 정보 표시용 변수
+    var versionString: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+        return "버전 \(version) (\(build))"
+    }
+#endif
+    
     // 20250327 CoreData 추가로 리팩토링 - 대체
     /*
     func loadRedemptions() {
