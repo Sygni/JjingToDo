@@ -9,6 +9,7 @@ import CoreData
 
 
 struct MainTodoView: View {
+    let user: UserEntity
     @Environment(\.managedObjectContext) private var viewContext
     
     @FetchRequest(
@@ -17,13 +18,12 @@ struct MainTodoView: View {
     ) private var taskEntities: FetchedResults<TaskEntity>
     
     @State private var newTask: String = ""
-    @State private var points: Int = 0
+    //@State private var points: Int = 0    // 20250328 리워드 탭 확장 개선을 위한 변경
+    //@AppStorage("points") var points: Int = 0     //20250328 point를 CoreData로 이전
+    //@AppStorage("isFirstLaunch") var isFirstLaunch: Bool = true
     @State private var totalPoints: Int = 0
     
-    //    @State private var tasks: [Task] = []  // 20250325 ContentView로 이동
-    //@Binding var tasks: [Task]    // 20250327 CoreData 추가로 리팩토링
-    //    @State private var redemptions: [Redemption] = [] // 20250325 ContentView로 이동
-    @Binding var redemptions: [Redemption]
+    //@Binding var redemptions: [Redemption]    // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
     
     //Delete alert popup
     //@State private var taskToDelete: Task? = nil    // 20250327
@@ -34,30 +34,14 @@ struct MainTodoView: View {
     @State private var selectedRewardLevel: RewardLevel = .easy //default: 1 (easy)
     
     //Edit
-    //@State private var taskToEdit: Task? = nil    // 20250327
     @State private var taskToEdit: TaskEntity? = nil
     @State private var editedTitle: String = ""
     @State private var showEditAlert = false
     
-    let redemptionKey = "savedRedemptions"
+    //let redemptionKey = "savedRedemptions"    // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
     let taskKey = "savedTasks"
     let pointKey = "savedPoints"
     let totalPointKey = "savedTotalPoints"
-    
-    // 20250327 CoreData 추가로 리팩토링 - 대체
-    /*
-     var sortedTasks: [Task] {
-     let incomplete = tasks.filter { !$0.isCompleted }
-     .sorted(by: { $0.createdAt > $1.createdAt })
-     
-     let complete = tasks.filter { $0.isCompleted }
-     .sorted(by: {
-     ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast)
-     })
-     
-     return incomplete + complete
-     }
-     */
     
     var sortedTaskEntities: [TaskEntity] {
         let incomplete = taskEntities.filter { !$0.isCompleted }
@@ -68,28 +52,11 @@ struct MainTodoView: View {
         
         return incomplete + complete
     }
-    
-    // 20250327 같은 코드지만 일단 위 버전으로 하기로
-    /*
-     var sortedTaskEntities: [TaskEntity] {
-     taskEntities.sorted {
-     if $0.isCompleted == $1.isCompleted {
-     // 같은 완료 상태일 경우, 완료된 경우는 completedAt, 나머지는 createdAt 기준
-     let lhsDate = $0.completedAt ?? $0.createdAt ?? .distantPast
-     let rhsDate = $1.completedAt ?? $1.createdAt ?? .distantPast
-     return lhsDate > rhsDate
-     } else {
-     // 미완료가 위로 올라오게
-     return !$0.isCompleted
-     }
-     }
-     }
-     */
-    
+
     var body: some View {
         VStack(spacing: 16) {
-            headerSection(points: points, totalPoints: totalPoints, viewContext: viewContext)
-            couponSection(points: points, viewContext: viewContext)
+            headerSection(points: user.points, totalPoints: totalPoints, viewContext: viewContext)
+            //couponSection(points: user.points, viewContext: viewContext) // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
             inputSection(newTask: $newTask, viewContext: viewContext, selectedRewardLevel: selectedRewardLevel, saveContext: saveContext)
             rewardLevelPicker(selectedRewardLevel: $selectedRewardLevel)
             taskListSection(
@@ -103,6 +70,33 @@ struct MainTodoView: View {
             )
             
         }
+        /*onAppear {
+         print("🧩 MainTodoView points: \(points)")  // 20250328 for debugging
+         
+         if isFirstLaunch {
+         print("🚀 첫 실행! 초기 데이터 세팅 중...")
+         
+         // ✅ 더미 보상 1개 추가
+         let reward = RewardEntity(context: viewContext)
+         reward.id = UUID()
+         reward.title = "테스트 보상"
+         reward.pointCost = 500
+         reward.remainingCount = 3
+         reward.createdAt = Date()
+         reward.rewardType = "기타"
+         
+         do {
+         try viewContext.save()
+         print("🎁 초기 보상 저장 완료")
+         } catch {
+         print("❌ 보상 저장 실패: \(error.localizedDescription)")
+         }
+         
+         // ✅ 포인트 초기화
+         points = 10000
+         isFirstLaunch = false
+         }
+         }*/
         .alert("이 항목을 삭제할까요?", isPresented: $showDeleteAlert, presenting: taskToDelete) { task in
             Button("삭제", role: .destructive) {
                 deleteTask(task)
@@ -114,23 +108,6 @@ struct MainTodoView: View {
         }
         .alert("할 일 수정", isPresented: $showEditAlert, actions: {
             TextField("제목", text: $editedTitle)
-            // 20250327 CoreData 추가로 리팩토링 - 대체
-            /*
-             Button("저장", role: .none) {
-             if let taskToEdit = taskToEdit,
-             let index = tasks.firstIndex(where: { $0.id == taskToEdit.id }) {
-             tasks[index] = Task(
-             id: taskToEdit.id,
-             title: editedTitle,
-             isCompleted: taskToEdit.isCompleted,
-             createdAt: taskToEdit.createdAt,
-             completedAt: taskToEdit.completedAt,
-             reward: taskToEdit.reward
-             )
-             saveData(tasks: tasks, redemptions: redemptions)
-             }
-             }
-             */
             Button("저장", role: .none) {
                 if let taskToEdit = taskToEdit {
                     taskToEdit.title = editedTitle
@@ -142,55 +119,37 @@ struct MainTodoView: View {
             Text("할 일 제목을 수정하세요")
         })
         .padding()
-    // 20250327 CoreData 추가로 리팩토링 - 제거
-    /*
-     .onAppear {
-     (tasks, redemptions) = loadData()
-     }
-     */
-    
+        
     }
 
     // 20250327 MARK: - View Components
-    private func headerSection(points: Int, totalPoints: Int, viewContext: NSManagedObjectContext) -> some View {
+    private func headerSection(points: Int32, totalPoints: Int, viewContext: NSManagedObjectContext) -> some View {
         VStack(spacing: 8) {
-            Text(" 🐰찡냥 포인트: \(points)💎 ")
+            Text(" 🐰찡냥 포인트: \(user.points)💎 ")
                 .font(.headline)
 
             ProgressView(value: Double(points), total: 10000)
                 .accentColor(Color(hex: "#FEDE00"))
                 .padding(.horizontal)
 
-            if points >= 5000 {
+            // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
+/*            if points >= 5000 {
                 Button("💸 5,000원 쿠폰 받기") {
-                    // 20250327 CoreData 추가로 리팩토링
-                    /*
-                    let redemption = Redemption(id: UUID(), amount: 5000, date: Date())
-                    redemptions.append(redemption)
-                    //print(redemptions.count)    //TEST
-                    points -= 5000
-                    saveData(tasks: tasks, redemptions: redemptions)
-                    */
-                    let newRedemption = RedemptionEntity(context: viewContext)
-                    newRedemption.id = UUID()
-                    newRedemption.amount = 5000
-                    newRedemption.createdAt = Date()
-                    newRedemption.isUsed = false
-                    try? viewContext.save()
                 }
                 .padding(8)
                 .background(Color.orange)
                 .foregroundColor(.white)
                 .cornerRadius(8)
             }
-
+*/
             Text("누적 기록: \(totalPoints)")
                 .font(.subheadline)
                 .foregroundColor(.gray)
         }
     }
 
-    private func couponSection(points: Int, viewContext: NSManagedObjectContext) -> some View {
+    // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
+/*    private func couponSection(points: Int32, viewContext: NSManagedObjectContext) -> some View {
         VStack(spacing: 8) {
             if points >= 10000 {
                 Button("💸 11,000원 쿠폰 받기") {
@@ -215,6 +174,7 @@ struct MainTodoView: View {
                 .cornerRadius(8)
             }
 
+ 
 #if DEBUG
             /*Button("디버그 포인트") {
                 points = 10000
@@ -229,9 +189,8 @@ struct MainTodoView: View {
 
         }
     }
-
+*/
     private func inputSection(newTask: Binding<String>, viewContext: NSManagedObjectContext, selectedRewardLevel: RewardLevel, saveContext: @escaping () -> Void) ->  some View {
-            // 20250327 CoreData 추가로 리팩토링 - 대체
             HStack {
                 TextField("할 일을 입력하세요", text: newTask)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -325,52 +284,6 @@ struct MainTodoView: View {
             }
         }
     }
-
-
-    // 20250327 CoreData 추가로 리팩토링 - 아래 함수들로 대체
-    /*
-    func toggleTask(_ task: Task) {
-        if let i = tasks.firstIndex(where: { $0.id == task.id }) {
-            tasks[i].isCompleted.toggle()
-            if tasks[i].isCompleted {
-                points += task.reward.points
-                totalPoints += task.reward.points
-                tasks[i].completedAt = Date()
-            } else {
-                points -= task.reward.points
-                totalPoints -= task.reward.points
-                tasks[i].completedAt = nil
-            }
-            saveData(tasks: tasks, redemptions: redemptions)
-        }
-    }
-    
-    func deleteTask(at offsets: IndexSet) {
-        for index in offsets {
-            let task = sortedTasks[index]
-            if let originalIndex = tasks.firstIndex(where: { $0.id == task.id }) {
-                // 포인트 차감 처리도 같이 해주기!
-                if tasks[originalIndex].isCompleted {
-                    points -= 100
-                    totalPoints -= 100
-                }
-                tasks.remove(at: originalIndex)
-            }
-        }
-        saveData(tasks: tasks, redemptions: redemptions)
-    }
-    
-    func deleteTask(_ task: Task) {
-        if let index = tasks.firstIndex(where: { $0.id == task.id }) {
-            if tasks[index].isCompleted {
-                points -= 100
-                totalPoints -= 100
-            }
-            tasks.remove(at: index)
-            saveData(tasks: tasks, redemptions: redemptions)
-        }
-    }
-     */
     
     @MainActor
     private func toggleTask(_ task: TaskEntity) {
@@ -380,24 +293,33 @@ struct MainTodoView: View {
         let point = task.reward.pointValue
 
         if task.isCompleted {
-            points += point
+            user.points += Int32(point)
             totalPoints += point
         } else {
-            points -= point
-            totalPoints -= point
+            if(user.points - Int32(point) >= 0){
+                user.points -= Int32(point)
+                totalPoints -= point
+            }
+            else{
+                user.points = 0
+                totalPoints = 0
+            }
+                
         }
 
-        saveContext()
+        //saveContext()
+        try? viewContext.save()
     }
     
     func deleteTask(_ task: TaskEntity) {
         if task.isCompleted {
-            points -= task.reward.pointValue
+            user.points -= Int32(task.reward.pointValue)
             totalPoints -= task.reward.pointValue
         }
 
         viewContext.delete(task)
-        saveContext()
+        try? viewContext.save()
+        //saveContext()
     }
     
     func deleteTask(at offsets: IndexSet) {
@@ -405,7 +327,7 @@ struct MainTodoView: View {
             let task = sortedTaskEntities[index]
 
             if task.isCompleted {
-                points -= task.reward.pointValue
+                user.points -= Int32(task.reward.pointValue)
                 totalPoints -= task.reward.pointValue
             }
 
@@ -426,7 +348,7 @@ struct MainTodoView: View {
     
     #if DEBUG
     func toggleDebugPoints() {
-        points = 10000
+        user.points = 10000
         totalPoints = 10000
         saveContext()
     }

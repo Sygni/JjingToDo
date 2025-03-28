@@ -2,27 +2,76 @@ import SwiftUI
 
 struct ContentView: View {
     
+    @Environment(\.managedObjectContext) private var viewContext
+    
     //@State private var tasks: [Task] = []     // 20250327 CoreData 추가로 리팩토링 - TaskEntity 기반으로 변경
-    @State private var redemptions: [Redemption] = []
+    //@State private var redemptions: [Redemption] = [] // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
+    
+    @State private var refreshToken = UUID()    // 20250328 Debug View 리프레시용
+    
+    // UserEntity Fetch
+    @FetchRequest(
+        entity: UserEntity.entity(),
+        sortDescriptors: []
+    ) var users: FetchedResults<UserEntity>
     
     var body: some View {
-        TabView {
-            //MainTodoView(tasks: $tasks, redemptions: $redemptions)    // 20250327
-            MainTodoView(redemptions: $redemptions)
-                .tabItem {
-                    Label("이겨내🔥", systemImage: "checkmark.circle")
-                }
-                //.tint(Color(hex: "#68BBE3"))
+        
+        if let user = users.first {
+            TabView {
+                //MainTodoView(tasks: $tasks, redemptions: $redemptions)    // 20250327
+                MainTodoView(user: users.first!)
+                    .tabItem {
+                        Label("이겨내🔥", systemImage: "checkmark.circle")
+                    }
+                    .id(refreshToken)
+                    //.tint(Color(hex: "#68BBE3"))  //안 먹히는듯...
 
-            //RedemptionHistoryView(tasks: $tasks, redemptions: $redemptions)   // 20250327
-            RedemptionHistoryView()
-                .tabItem {
-                    Label("보상 기록", systemImage: "list.bullet.rectangle")
+                //RedemptionHistoryView(tasks: $tasks, redemptions: $redemptions)   // 20250327
+                // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
+/*                RedemptionHistoryView()
+                    .tabItem {
+                        Label("보상 기록", systemImage: "list.bullet.rectangle")
+                    }
+                    //.tint(Color(hex: "#68BBE3"))
+*/
+                // 20250328 Reward 구조 확장 개선
+                RewardListView(user: user)
+                    .tabItem {
+                        Label("보상", systemImage: "gift")
+                    }
+                    .id(refreshToken)
+                
+#if DEBUG
+                DebugToolView(refreshTrigger: $refreshToken)
+                    .tabItem {
+                        Label("디버그", systemImage: "wrench.and.screwdriver")
+                    }
+                    .id(refreshToken)
+#endif
+            }
+            .accentColor(Color(hex: "#68BBE3"))
+        } else {
+            // 유저가 없으면 자동 생성
+            Color.clear
+                .onAppear {
+                    createUser()
                 }
-                //.tint(Color(hex: "#68BBE3"))
         }
-        .accentColor(Color(hex: "#68BBE3"))
+        
     }
+    
+    private func createUser() {
+            let newUser = UserEntity(context: viewContext)
+            newUser.id = UUID()
+#if DEBUG
+            newUser.points = 10000
+#else
+            newUser.points = 0
+#endif
+            newUser.joinedAt = Date()
+            try? viewContext.save()
+        }
 }
 
 let taskKey = "tasks"
