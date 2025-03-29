@@ -13,22 +13,31 @@ struct PersistenceController {
     let container: NSPersistentContainer
 
     init(inMemory: Bool = false) {
-        container = NSPersistentContainer(name: "DataModel") // ← .xcdatamodeld 파일 이름!
-        
-        let description = container.persistentStoreDescriptions.first
-        description?.shouldMigrateStoreAutomatically = true
-        description?.shouldInferMappingModelAutomatically = true
-        
+        container = NSPersistentContainer(name: "DataModel")
         if inMemory {
             container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
         }
-
-        container.loadPersistentStores { description, error in
-            if let error = error {
-                fatalError("Core Data 로드 실패: \(error)")
+        container.loadPersistentStores { _, error in
+            if let error = error as NSError? {
+                fatalError("Unresolved error \(error), \(error.userInfo)")
             }
         }
-
-        container.viewContext.automaticallyMergesChangesFromParent = true
     }
+}
+
+extension PersistenceController {
+    static var preview: PersistenceController = {
+        let controller = PersistenceController(inMemory: true)
+        let viewContext = controller.container.viewContext
+
+        // 예시: 미리보기용 더미 TaskEntity 생성 가능
+        let exampleTask = TaskEntity(context: viewContext)
+        exampleTask.id = UUID()
+        exampleTask.title = "미리보기 태스크"
+        exampleTask.createdAt = Date()
+        exampleTask.isCompleted = false
+
+        try? viewContext.save()
+        return controller
+    }()
 }

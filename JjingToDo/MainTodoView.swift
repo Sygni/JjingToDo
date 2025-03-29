@@ -7,7 +7,6 @@
 import SwiftUI
 import CoreData
 
-
 struct MainTodoView: View {
     let user: UserEntity
     @Environment(\.managedObjectContext) private var viewContext
@@ -18,15 +17,11 @@ struct MainTodoView: View {
     ) private var taskEntities: FetchedResults<TaskEntity>
     
     @State private var newTask: String = ""
+    @State private var newTaskText: String = "" // 20250329 키보드 외 영역 탭했을 때 키보드 내리기 위한 변수 추가
     //@State private var points: Int = 0    // 20250328 리워드 탭 확장 개선을 위한 변경
-    //@AppStorage("points") var points: Int = 0     //20250328 point를 CoreData로 이전
-    //@AppStorage("isFirstLaunch") var isFirstLaunch: Bool = true
     @State private var totalPoints: Int = 0
     
-    //@Binding var redemptions: [Redemption]    // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
-    
     //Delete alert popup
-    //@State private var taskToDelete: Task? = nil    // 20250327
     @State private var taskToDelete: TaskEntity? = nil
     @State private var showDeleteAlert = false
     
@@ -38,7 +33,6 @@ struct MainTodoView: View {
     @State private var editedTitle: String = ""
     @State private var showEditAlert = false
     
-    //let redemptionKey = "savedRedemptions"    // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
     let taskKey = "savedTasks"
     let pointKey = "savedPoints"
     let totalPointKey = "savedTotalPoints"
@@ -54,71 +48,58 @@ struct MainTodoView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-            headerSection(points: user.points, totalPoints: totalPoints, viewContext: viewContext)
-            //couponSection(points: user.points, viewContext: viewContext) // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
-            inputSection(newTask: $newTask, viewContext: viewContext, selectedRewardLevel: selectedRewardLevel, saveContext: saveContext)
-            rewardLevelPicker(selectedRewardLevel: $selectedRewardLevel)
-            taskListSection(
-                sortedTasks: sortedTaskEntities,
-                taskToEdit: $taskToEdit,
-                taskToDelete: $taskToDelete,
-                editedTitle: $editedTitle,
-                showEditAlert: $showEditAlert,
-                showDeleteAlert: $showDeleteAlert,
-                toggleTask: toggleTask
-            )
-            
-        }
-        /*onAppear {
-         print("🧩 MainTodoView points: \(points)")  // 20250328 for debugging
-         
-         if isFirstLaunch {
-         print("🚀 첫 실행! 초기 데이터 세팅 중...")
-         
-         // ✅ 더미 보상 1개 추가
-         let reward = RewardEntity(context: viewContext)
-         reward.id = UUID()
-         reward.title = "테스트 보상"
-         reward.pointCost = 500
-         reward.remainingCount = 3
-         reward.createdAt = Date()
-         reward.rewardType = "기타"
-         
-         do {
-         try viewContext.save()
-         print("🎁 초기 보상 저장 완료")
-         } catch {
-         print("❌ 보상 저장 실패: \(error.localizedDescription)")
-         }
-         
-         // ✅ 포인트 초기화
-         points = 10000
-         isFirstLaunch = false
-         }
-         }*/
-        .alert("이 항목을 삭제할까요?", isPresented: $showDeleteAlert, presenting: taskToDelete) { task in
-            Button("삭제", role: .destructive) {
-                deleteTask(task)
-            }
-            Button("취소", role: .cancel) { }
-        } message: { task in
-            //Text("\"\(task.title)\"를 삭제하면 복구할 수 없습니다.")
-            Text("항목을 삭제하면 복구할 수 없습니다.")
-        }
-        .alert("할 일 수정", isPresented: $showEditAlert, actions: {
-            TextField("제목", text: $editedTitle)
-            Button("저장", role: .none) {
-                if let taskToEdit = taskToEdit {
-                    taskToEdit.title = editedTitle
-                    saveContext()
+        
+        ZStack {
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    UIApplication.shared.endEditing()
                 }
+
+            VStack {
+                // 여기에 할 일 리스트나 다른 UI 추가
+                VStack(spacing: 16) {
+                    headerSection(points: user.points, totalPoints: totalPoints, viewContext: viewContext)
+                    //couponSection(points: user.points, viewContext: viewContext) // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
+                    inputSection(newTask: $newTask, viewContext: viewContext, selectedRewardLevel: selectedRewardLevel, saveContext: saveContext)
+                    rewardLevelPicker(selectedRewardLevel: $selectedRewardLevel)
+                    taskListSection(
+                        sortedTasks: sortedTaskEntities,
+                        taskToEdit: $taskToEdit,
+                        taskToDelete: $taskToDelete,
+                        editedTitle: $editedTitle,
+                        showEditAlert: $showEditAlert,
+                        showDeleteAlert: $showDeleteAlert,
+                        toggleTask: toggleTask
+                    )
+                    
+                }
+                .alert("이 항목을 삭제할까요?", isPresented: $showDeleteAlert, presenting: taskToDelete) { task in
+                    Button("삭제", role: .destructive) {
+                        deleteTask(task)
+                    }
+                    Button("취소", role: .cancel) { }
+                } message: { task in
+                    //Text("\"\(task.title)\"를 삭제하면 복구할 수 없습니다.")
+                    Text("항목을 삭제하면 복구할 수 없습니다.")
+                }
+                .alert("할 일 수정", isPresented: $showEditAlert, actions: {
+                    TextField("제목", text: $editedTitle)
+                    Button("저장", role: .none) {
+                        if let taskToEdit = taskToEdit {
+                            taskToEdit.title = editedTitle
+                            saveContext()
+                        }
+                    }
+                    Button("취소", role: .cancel) { }
+                }, message: {
+                    Text("할 일 제목을 수정하세요")
+                })
+                .padding()
+
+                Spacer()
             }
-            Button("취소", role: .cancel) { }
-        }, message: {
-            Text("할 일 제목을 수정하세요")
-        })
-        .padding()
+        }
         
     }
 
@@ -132,64 +113,12 @@ struct MainTodoView: View {
                 .accentColor(Color(hex: "#FEDE00"))
                 .padding(.horizontal)
 
-            // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
-/*            if points >= 5000 {
-                Button("💸 5,000원 쿠폰 받기") {
-                }
-                .padding(8)
-                .background(Color.orange)
-                .foregroundColor(.white)
-                .cornerRadius(8)
-            }
-*/
             Text("누적 기록: \(totalPoints)")
                 .font(.subheadline)
                 .foregroundColor(.gray)
         }
     }
 
-    // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
-/*    private func couponSection(points: Int32, viewContext: NSManagedObjectContext) -> some View {
-        VStack(spacing: 8) {
-            if points >= 10000 {
-                Button("💸 11,000원 쿠폰 받기") {
-                    // 20250327 CoreData 추가로 리팩토링
-                    /*
-                    let redemption = Redemption(id: UUID(), amount: 10000, date: Date())
-                    redemptions.append(redemption)
-                    //print(redemptions.count)    //TEST
-                    points -= 10000
-                    saveData(tasks: tasks, redemptions: redemptions)
-                    */
-                    let newRedemption = RedemptionEntity(context: viewContext)
-                    newRedemption.id = UUID()
-                    newRedemption.amount = 10000
-                    newRedemption.createdAt = Date()
-                    newRedemption.isUsed = false
-                    try? viewContext.save()
-                }
-                .padding(8)
-                .background(Color.purple)
-                .foregroundColor(.white)
-                .cornerRadius(8)
-            }
-
- 
-#if DEBUG
-            /*Button("디버그 포인트") {
-                points = 10000
-                totalPoints = 10000
-                saveData(tasks: tasks, redemptions: redemptions)
-            }*/
-            Button("디버그 포인트") {
-                toggleDebugPoints()
-            }
-#endif
-             
-
-        }
-    }
-*/
     private func inputSection(newTask: Binding<String>, viewContext: NSManagedObjectContext, selectedRewardLevel: RewardLevel, saveContext: @escaping () -> Void) ->  some View {
             HStack {
                 TextField("할 일을 입력하세요", text: newTask)
@@ -197,15 +126,6 @@ struct MainTodoView: View {
                     .submitLabel(.done)
                 
                 Button("추가") {
-                    // 20250327 CoreData 추가로 리팩토링 - 대체
-                    /*
-                    if !newTask.isEmpty {
-                        let task = Task(title: newTask, reward: selectedRewardLevel)
-                        tasks.append(task)
-                        newTask = ""
-                        saveData(tasks: tasks, redemptions: redemptions)
-                    }
-                     */
                     if !newTask.wrappedValue.isEmpty {
                         let task = TaskEntity(context: viewContext)
                         task.id = UUID()
@@ -378,4 +298,19 @@ extension Color {
         let blue = Double(rgb & 0x0000FF) / 255.0
         self.init(red: red, green: green, blue: blue)
     }
+}
+
+#Preview {
+    let context = PersistenceController.preview.container.viewContext
+    let userRequest = NSFetchRequest<UserEntity>(entityName: "UserEntity")
+    let user = (try? context.fetch(userRequest).first) ?? {
+        let newUser = UserEntity(context: context)
+        newUser.id = UUID()
+        newUser.points = 0
+        newUser.joinedAt = Date()
+        try? context.save()
+        return newUser
+    }()
+    
+    return MainTodoView(user: user).environment(\.managedObjectContext, context)
 }
