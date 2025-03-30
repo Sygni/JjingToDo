@@ -1,13 +1,13 @@
 //
-//  JjingToDoUITestsLaunchTests.swift
-//  JjingToDoUITests
+//  HelloSwiftUIUITestsLaunchTests.swift
+//  HelloSwiftUIUITests
 //
-//  Created by Jeongah Seo on 3/30/25.
+//  Created by Jeongah Seo on 3/24/25.
 //
 
 import XCTest
 
-final class JjingToDoUITestsLaunchTests: XCTestCase {
+final class HelloSwiftUIUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

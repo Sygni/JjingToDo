@@ -1,13 +1,13 @@
 //
-//  JjingToDoUITests.swift
-//  JjingToDoUITests
+//  HelloSwiftUIUITests.swift
+//  HelloSwiftUIUITests
 //
-//  Created by Jeongah Seo on 3/30/25.
+//  Created by Jeongah Seo on 3/24/25.
 //
 
 import XCTest
 
-final class JjingToDoUITests: XCTestCase {
+final class HelloSwiftUIUITests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
