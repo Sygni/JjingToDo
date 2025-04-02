@@ -17,6 +17,7 @@ extension UserEntity {
     @NSManaged public var id: UUID
     @NSManaged public var points: Int32
     @NSManaged public var joinedAt: Date
+    @NSManaged public var lifetimePoints: Int64
     
     // Add this as an override to ensure SwiftUI detects changes
     public var pointsPublisher: Binding<Int32> {

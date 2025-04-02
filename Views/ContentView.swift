@@ -64,11 +64,7 @@ struct ContentView: View {
     private func createUser() {
             let newUser = UserEntity(context: viewContext)
             newUser.id = UUID()
-#if DEBUG
-            newUser.points = 10000
-#else
             newUser.points = 0
-#endif
             newUser.joinedAt = Date()
             try? viewContext.save()
         }

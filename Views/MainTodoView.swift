@@ -266,13 +266,6 @@ struct MainTodoView: View {
         }
     }
     
-    #if DEBUG
-    func toggleDebugPoints() {
-        user.points = 10000
-        totalPoints = 10000
-        saveContext()
-    }
-    #endif
 }
 
 extension UIApplication {

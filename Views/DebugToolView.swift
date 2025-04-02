@@ -65,14 +65,11 @@ struct DebugToolView: View {
                         )
                     }
 
-                    Button("📥 CSV 불러오기 (Task)") {
-                        importEntityType = "TaskEntity"
+                    Button("📥 전체 CSV 불러오기") {
+                        //CSVManager.importAllCSVFromDocuments(context: viewContext)
+                        importEntityType = nil  // ✅ 전체 불러오기용 시그널
                         showImportPicker = true
-                    }
-
-                    Button("📥 CSV 불러오기 (Reward)") {
-                        importEntityType = "RewardEntity"
-                        showImportPicker = true
+                        //refreshTrigger = UUID()
                     }
                 }
 
@@ -89,178 +86,57 @@ struct DebugToolView: View {
                 allowsMultipleSelection: false
             ) { result in
                 do {
-                    guard let selectedFile: URL = try result.get().first,
-                          let entityType = importEntityType else { return }
+                    let selectedFiles = try result.get()
                     
-                    /*
-                    if entityType == "TaskEntity" {
-                        importTasksFromCSV(url: selectedFile)
-                    } else if entityType == "RewardEntity" {
-                        importRewardsFromCSV(url: selectedFile)
+                    for fileURL in selectedFiles {
+                        print("📄 선택한 파일 URL: \(fileURL)")
+                        print("📄 경로 접근 가능? \(FileManager.default.isReadableFile(atPath: fileURL.path))")
+                        
+                        if fileURL.startAccessingSecurityScopedResource() {
+                            defer { fileURL.stopAccessingSecurityScopedResource() }
+                            
+                            //guard let entityType = importEntityType else { return }
+                            
+                            guard let entityType = importEntityType else {
+                                print("📦 entityType이 nil → 전체 CSV 불러오기 수행")
+                                CSVManager.importAllCSVFromDocuments(urls: selectedFiles, context: viewContext)
+                                refreshTrigger = UUID()
+                                return
+                            }
+                            
+                            switch entityType {
+                            case "TaskEntity":
+                                CSVManager.importCSV(url: fileURL, into: TaskEntity.self, context: viewContext)
+                            case "RewardEntity":
+                                CSVManager.importCSV(url: fileURL, into: RewardEntity.self, context: viewContext)
+                            case "UserEntity":
+                                //CSVManager.importCSV(url: fileURL, into: UserEntity.self, context: viewContext)
+                                CSVManager.importUserFromCSV(url: fileURL, context: viewContext)
+                                refreshTrigger = UUID()
+                            default:
+                                break
+                            }
+                            
+                            refreshTrigger = UUID()
+                        } else {
+                            print("❌ 보안 접근 권한 실패: \(fileURL)")
+                        }
                     }
-                    */
-                    if entityType == "TaskEntity" {
-                        importCSV(url: selectedFile, into: TaskEntity.self)
-                    } else if entityType == "RewardEntity" {
-                        importCSV(url: selectedFile, into: RewardEntity.self)
-                    }
-                    refreshTrigger = UUID()
                 } catch {
                     print("❌ 파일 가져오기 실패: \(error.localizedDescription)")
                 }
             }
+
         }
     }
 
     private func exportAllToDocuments() {
-        _ = exportEntityToCSVToDocuments(entityName: "TaskEntity", filename: "tasks", context: viewContext)
-        _ = exportEntityToCSVToDocuments(entityName: "RewardEntity", filename: "rewards", context: viewContext)
+        _ = CSVManager.exportEntityToCSVToDocuments(entityName: "TaskEntity", filename: "tasks", context: viewContext)
+        _ = CSVManager.exportEntityToCSVToDocuments(entityName: "RewardEntity", filename: "rewards", context: viewContext)
+        _ = CSVManager.exportEntityToCSVToDocuments(entityName: "UserEntity", filename: "user", context: viewContext)
         print("✅ CSV 백업 완료 (Document 디렉토리)")
     }
 
-    private func exportEntityToCSVToDocuments(entityName: String, filename: String, context: NSManagedObjectContext) -> URL? {
-        guard let entity = NSEntityDescription.entity(forEntityName: entityName, in: context) else { return nil }
-
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: entityName)
-        do {
-            let objects = try context.fetch(fetchRequest)
-            let attributeNames = entity.attributesByName.keys.sorted()
-
-            var csvString = attributeNames.joined(separator: ",") + "\n"
-
-            for object in objects {
-                let values = attributeNames.map { key -> String in
-                    if let value = object.value(forKey: key) {
-                        return "\"\(value)\""
-                    } else {
-                        return "\"\""
-                    }
-                }
-                csvString += values.joined(separator: ",") + "\n"
-            }
-
-            let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let fileURL = docURL.appendingPathComponent("\(filename).csv")
-            try csvString.write(to: fileURL, atomically: true, encoding: .utf8)
-            return fileURL
-        } catch {
-            print("Export error: \(error)")
-            return nil
-        }
-    }
-
-    private func importCSV<T: NSManagedObject>(url: URL, into entityType: T.Type) {
-            do {
-                let content = try String(contentsOf: url)
-                let rows = content.components(separatedBy: "\n").filter { !$0.isEmpty }
-                guard rows.count > 1 else { return }
-                let keys = rows[0].components(separatedBy: ",")
-
-                for row in rows.dropFirst() {
-                    let values = row.components(separatedBy: ",").map { $0.replacingOccurrences(of: "\"", with: "") }
-                    let object = T(context: viewContext)
-                    let attributes = T.entity().attributesByName
-
-                    for (index, key) in keys.enumerated() where index < values.count {
-                        let value = values[index]
-                        guard let attribute = attributes[key] else { continue }
-
-                        switch attribute.attributeType {
-                        case .UUIDAttributeType:
-                            object.setValue(UUID(uuidString: value), forKey: key)
-                        case .dateAttributeType:
-                            let formatter = ISO8601DateFormatter()
-                            object.setValue(formatter.date(from: value), forKey: key)
-                        case .integer32AttributeType:
-                            object.setValue(Int32(value) ?? 0, forKey: key)
-                        case .booleanAttributeType:
-                            object.setValue(value == "1" || value.lowercased() == "true", forKey: key)
-                        case .stringAttributeType:
-                            object.setValue(value, forKey: key)
-                        default:
-                            print("⚠️ 처리되지 않은 속성 타입: \(attribute.attributeType) for key: \(key)")
-                        }
-                    }
-                }
-                try viewContext.save()
-                print("✅ \(T.self) CSV 가져오기 완료")
-            } catch {
-                print("❌ CSV 파싱 실패: \(error.localizedDescription)")
-            }
-        }
-/*
-    private func importTasksFromCSV(url: URL) {
-        do {
-            let content = try String(contentsOf: url)
-            let rows = content.components(separatedBy: "\n").filter { !$0.isEmpty }
-            guard rows.count > 1 else { return }
-            let keys = rows[0].components(separatedBy: ",")
-
-            for row in rows.dropFirst() {
-                let values = row.components(separatedBy: ",").map { $0.replacingOccurrences(of: "\"", with: "") }
-                let task = TaskEntity(context: viewContext)
-                for (index, key) in keys.enumerated() where index < values.count {
-                    let value = values[index]
-                    if let attribute = TaskEntity.entity().attributesByName[key] {
-                        switch attribute.attributeType {
-                        case .UUIDAttributeType:
-                            task.setValue(UUID(uuidString: value), forKey: key)
-                        case .dateAttributeType:
-                            let formatter = ISO8601DateFormatter()
-                            task.setValue(formatter.date(from: value), forKey: key)
-                        case .integer32AttributeType:
-                            task.setValue(Int32(value), forKey: key)
-                        case .booleanAttributeType:
-                            task.setValue(value == "1" || value.lowercased() == "true", forKey: key)
-                        default:
-                            task.setValue(value, forKey: key)
-                        }
-                    }
-                }
-            }
-            try viewContext.save()
-            print("✅ Task CSV 가져오기 완료")
-        } catch {
-            print("❌ Task CSV 파싱 실패: \(error.localizedDescription)")
-        }
-    }
-
-    private func importRewardsFromCSV(url: URL) {
-        do {
-            let content = try String(contentsOf: url)
-            let rows = content.components(separatedBy: "\n").filter { !$0.isEmpty }
-            guard rows.count > 1 else { return }
-            let keys = rows[0].components(separatedBy: ",")
-
-            for row in rows.dropFirst() {
-                let values = row.components(separatedBy: ",").map { $0.replacingOccurrences(of: "\"", with: "") }
-                let reward = RewardEntity(context: viewContext)
-                for (index, key) in keys.enumerated() where index < values.count {
-                    let value = values[index]
-                    if let attribute = RewardEntity.entity().attributesByName[key] {
-                        switch attribute.attributeType {
-                        case .UUIDAttributeType:
-                            reward.setValue(UUID(uuidString: value), forKey: key)
-                        case .dateAttributeType:
-                            let formatter = ISO8601DateFormatter()
-                            reward.setValue(formatter.date(from: value), forKey: key)
-                        case .integer32AttributeType:
-                            reward.setValue(Int32(value), forKey: key)
-                        case .booleanAttributeType:
-                            reward.setValue(value == "1" || value.lowercased() == "true", forKey: key)
-                        default:
-                            reward.setValue(value, forKey: key)
-                        }
-                    }
-                }
-            }
-            try viewContext.save()
-            print("✅ Reward CSV 가져오기 완료")
-        } catch {
-            print("❌ Reward CSV 파싱 실패: \(error.localizedDescription)")
-        }
-    }
-*/
     private func resetAllData() {
         let userFetch = NSFetchRequest<NSFetchRequestResult>(entityName: "UserEntity")
         let userDelete = NSBatchDeleteRequest(fetchRequest: userFetch)
@@ -283,6 +159,7 @@ struct DebugToolView: View {
         let newUser = UserEntity(context: viewContext)
         newUser.id = UUID()
         newUser.points = 0
+        newUser.lifetimePoints = 0
         newUser.joinedAt = Date()
 
         try? viewContext.save()
@@ -290,7 +167,7 @@ struct DebugToolView: View {
 
         print("✅ 전체 데이터 삭제 + 포인트 초기화 + 보상 삭제 완료")
     }
-
+    
     private func setPoints(to amount: Int32) {
         let request = UserEntity.fetchRequest()
         if let user = try? viewContext.fetch(request).first {
