@@ -20,4 +20,5 @@ extension TaskEntity {
     @NSManaged public var createdAt: Date?
     @NSManaged public var completedAt: Date?
     @NSManaged public var rewardLevelRaw: Int16
+    @NSManaged public var taskTypeRaw: Int16
 }

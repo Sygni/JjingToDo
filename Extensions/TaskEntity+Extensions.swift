@@ -14,6 +14,11 @@ extension TaskEntity: Identifiable {
         set { self.rewardLevelRaw = Int16(newValue.rawValue) }
     }
 
+    var taskType: TaskType {
+        get { TaskType(rawValue: Int(self.taskTypeRaw)) ?? .personal }
+        set { self.taskTypeRaw = Int16(newValue.rawValue) }
+    }
+
     var safeTitle: String {
         title ?? ""
     }

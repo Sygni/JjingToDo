@@ -27,6 +27,7 @@ struct MainTodoView: View {
     
     //Reward system
     @State private var selectedRewardLevel: RewardLevel = .easy //default: 1 (easy)
+    @State private var selectedTaskType: TaskType = .personal //default: 개인
     
     //Edit
     @State private var taskToEdit: TaskEntity? = nil
@@ -62,7 +63,7 @@ struct MainTodoView: View {
                     headerSection(points: user.points, totalPoints: totalPoints, viewContext: viewContext)
                     //couponSection(points: user.points, viewContext: viewContext) // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
                     inputSection(newTask: $newTask, viewContext: viewContext, selectedRewardLevel: selectedRewardLevel, saveContext: saveContext)
-                    rewardLevelPicker(selectedRewardLevel: $selectedRewardLevel)
+                    //rewardLevelPicker(selectedRewardLevel: $selectedRewardLevel) // 20250419 picker 추가로 이 부분 제거
                     taskListSection(
                         sortedTasks: sortedTaskEntities,
                         taskToEdit: $taskToEdit,
@@ -112,14 +113,18 @@ struct MainTodoView: View {
             ProgressView(value: Double(points), total: 10000)
                 .accentColor(Color(hex: "#FEDE00"))
                 .padding(.horizontal)
-
+            
+            // 20250419 일단 빼기..
+            /*
             Text("누적 기록: \(totalPoints)")
                 .font(.subheadline)
                 .foregroundColor(.gray)
+             */
         }
     }
 
     private func inputSection(newTask: Binding<String>, viewContext: NSManagedObjectContext, selectedRewardLevel: RewardLevel, saveContext: @escaping () -> Void) ->  some View {
+        VStack {
             HStack {
                 TextField("할 일을 입력하세요", text: newTask)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -133,6 +138,7 @@ struct MainTodoView: View {
                         task.isCompleted = false
                         task.createdAt = Date()
                         task.rewardLevelRaw = Int16(selectedRewardLevel.rawValue)
+                        task.taskType = selectedTaskType
 
                         newTask.wrappedValue = ""
                         saveContext()
@@ -144,9 +150,34 @@ struct MainTodoView: View {
                 .foregroundColor(.white)
                 .cornerRadius(8)
             }
-            .padding()
-
+            
+            HStack {
+                Picker("타입", selection: $selectedTaskType) {
+                    ForEach(TaskType.allCases, id: \.self) { type in
+                        Label(type.label, systemImage: type.icon)
+                            .tag(type)
+                    }
+                }
+                .frame(width: 150, height: 30)
+                .pickerStyle(SegmentedPickerStyle())
+                
+                Picker("난이도", selection: $selectedRewardLevel) {
+                    Text(RewardLevel.easy.label)
+                        .tag(RewardLevel.easy)
+                    Text(RewardLevel.normal.label)
+                        .tag(RewardLevel.normal)
+                    Text(RewardLevel.hard.label)
+                        .tag(RewardLevel.hard)
+                    Text(RewardLevel.veryHard.label)
+                        .tag(RewardLevel.veryHard)
+                }
+                .frame(width: 200, height: 30)
+                .pickerStyle(SegmentedPickerStyle())
+            }
+            .padding(.horizontal)
         }
+        .padding()
+    }
 
     private func rewardLevelPicker(selectedRewardLevel: Binding<RewardLevel>) -> some View {
         Picker("난이도", selection: selectedRewardLevel) {
@@ -179,9 +210,14 @@ struct MainTodoView: View {
                             .foregroundColor(task.isCompleted ? task.reward.color : .gray)
                     }
 
+                    Image(systemName: task.taskType.icon)
+                        //.font(.caption)
+                        .foregroundColor(task.taskType.color)
+                    
                     Text(task.safeTitle)
                         .strikethrough(task.isCompleted)
                         .foregroundColor(task.isCompleted ? .gray : task.reward.color)
+                    
                 }
                 .swipeActions(edge: .trailing) {
                     Button {

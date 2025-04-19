@@ -10,5 +10,5 @@ import CoreData
 
 @objc(TaskEntity)
 public class TaskEntity: NSManagedObject {
-
+    //@NSManaged public var taskTypeRaw: String?
 }
