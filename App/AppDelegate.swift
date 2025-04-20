@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import BackgroundTasks
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func applicationWillTerminate(_ application: UIApplication) {
@@ -32,5 +33,19 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 print("❌ 백그라운드 저장 실패: \(error.localizedDescription)")
             }
         }
+    }
+    
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
+    ) -> Bool {
+
+        // BGTask 식별자 등록 (TodayQueueManager 내부 taskIdentifier 와 동일)
+        TodayQueueManager.shared.registerBGTask()
+
+        // 다음 02:05 예약
+        TodayQueueManager.shared.scheduleReset()
+
+        return true
     }
 }

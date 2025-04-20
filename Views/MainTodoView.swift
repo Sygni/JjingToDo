@@ -9,12 +9,12 @@ import CoreData
 
 struct MainTodoView: View {
     let user: UserEntity
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.managedObjectContext) /*private*/ var viewContext
     
     @FetchRequest(
         entity: TaskEntity.entity(),
         sortDescriptors: []  // 정렬은 직접 해줄 거니까 비워도 됨
-    ) private var taskEntities: FetchedResults<TaskEntity>
+    ) /*private*/ var taskEntities: FetchedResults<TaskEntity>
     
     @State private var newTask: String = ""
     @State private var newTaskText: String = "" // 20250329 키보드 외 영역 탭했을 때 키보드 내리기 위한 변수 추가
@@ -33,6 +33,10 @@ struct MainTodoView: View {
     @State private var taskToEdit: TaskEntity? = nil
     @State private var editedTitle: String = ""
     @State private var showEditAlert = false
+    
+    // 20250420 오늘의할일 기능 추가
+    @State /*private*/ var showTodayLimitAlert = false
+    @State /*private*/ var todayLimitMessage = ""
     
     let taskKey = "savedTasks"
     let pointKey = "savedPoints"
@@ -61,18 +65,76 @@ struct MainTodoView: View {
                 // 여기에 할 일 리스트나 다른 UI 추가
                 VStack(spacing: 16) {
                     headerSection(points: user.points, totalPoints: totalPoints, viewContext: viewContext)
-                    //couponSection(points: user.points, viewContext: viewContext) // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
                     inputSection(newTask: $newTask, viewContext: viewContext, selectedRewardLevel: selectedRewardLevel, saveContext: saveContext)
-                    //rewardLevelPicker(selectedRewardLevel: $selectedRewardLevel) // 20250419 picker 추가로 이 부분 제거
-                    taskListSection(
-                        sortedTasks: sortedTaskEntities,
-                        taskToEdit: $taskToEdit,
-                        taskToDelete: $taskToDelete,
-                        editedTitle: $editedTitle,
-                        showEditAlert: $showEditAlert,
-                        showDeleteAlert: $showDeleteAlert,
-                        toggleTask: toggleTask
-                    )
+                    
+                    // 20250420 오늘의할일 기능 추가
+                    List {
+                        // ── 오늘 할 일 섹션 ───────────────────────────────────
+                        if !todayTasks.isEmpty {
+                            Section {
+                                ForEach(todayTasks) { task in
+                                    //taskRow(task)
+                                    taskRow(
+                                        task,
+                                        taskToEdit: $taskToEdit,
+                                        editedTitle: $editedTitle,
+                                        showEditAlert: $showEditAlert,
+                                        taskToDelete: $taskToDelete,
+                                        showDeleteAlert: $showDeleteAlert
+                                    )
+                                    .listRowBackground(
+                                        Color(UIColor.systemMint).opacity(0.10)    // 🎨 원하는 톤으로
+                                    )
+                                }
+                            } header: {
+                                VStack(alignment: .leading, spacing: 4){
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "trophy")
+                                            .foregroundColor(.gray)
+                                        Text("Today's Mission")
+                                            .font(.headline)
+                                            .fontWeight(.bold)
+                                    }
+                                    Divider()
+                                        .frame(maxWidth: .infinity)
+                                        .background(Color.accentColor)
+                                }
+                                .padding(.top, 4)
+                                //.padding(.leading, -8)      // 리스트 인셋 만큼 보정
+                                .background(Color(.systemBackground))
+                            }
+                        }
+
+                        // ── 기본 태스크 섹션 ──────────────────────────────
+                        Section {
+                            ForEach(otherTasks) { task in
+                                //taskRow(task)
+                                taskRow(
+                                    task,
+                                    taskToEdit: $taskToEdit,
+                                    editedTitle: $editedTitle,
+                                    showEditAlert: $showEditAlert,
+                                    taskToDelete: $taskToDelete,
+                                    showDeleteAlert: $showDeleteAlert
+                                )
+                            }
+                        } header: {
+                            HStack {
+                                Image(systemName: "flag.checkered")
+                                    .foregroundColor(.gray)
+                                Text("Quest")
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                            }
+                            .padding(.top, 6)
+                            .padding(.leading, -8)      // 리스트 인셋 만큼 보정
+                            .background(Color(.systemBackground))
+                        }
+                    }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)            // 리스트 배경 투명
+                    .padding(.horizontal, -4)                    // 좌우 살짝 붙이기(선택)
+                    .animation(.default, value: todayTasks.count)
                     
                 }
                 .alert("이 항목을 삭제할까요?", isPresented: $showDeleteAlert, presenting: taskToDelete) { task in
@@ -100,6 +162,9 @@ struct MainTodoView: View {
 
                 Spacer()
             }
+        }        
+        .alert(todayLimitMessage, isPresented: $showTodayLimitAlert) {
+            Button("확인", role: .cancel) { }
         }
         
     }
@@ -190,55 +255,58 @@ struct MainTodoView: View {
         }
         .pickerStyle(SegmentedPickerStyle())
     }
-
-    private func taskListSection(
-        sortedTasks: [TaskEntity],
+    
+    // 20250420 오늘의할일 기능 추가
+    // MARK: - 공통 셀 UI (Today·Normal 공유)
+    private func taskRow(
+        _ task: TaskEntity,
         taskToEdit: Binding<TaskEntity?>,
-        taskToDelete: Binding<TaskEntity?>,
         editedTitle: Binding<String>,
         showEditAlert: Binding<Bool>,
-        showDeleteAlert: Binding<Bool>,
-        toggleTask: @escaping (TaskEntity) -> Void
+        taskToDelete: Binding<TaskEntity?>,
+        showDeleteAlert: Binding<Bool>
     ) -> some View {
-        List {
-            ForEach(sortedTasks) { task in
-                HStack {
-                    Button {
-                        toggleTask(task)
-                    } label: {
-                        Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                            .foregroundColor(task.isCompleted ? task.reward.color : .gray)
-                    }
-
-                    Image(systemName: task.taskType.icon)
-                        //.font(.caption)
-                        .foregroundColor(task.taskType.color)
-                    
-                    Text(task.safeTitle)
-                        .strikethrough(task.isCompleted)
-                        .foregroundColor(task.isCompleted ? .gray : task.reward.color)
-                    
+        // Wrapping in a plain view makes swipeActions behave correctly
+        VStack {
+            HStack {
+                Button { toggleTask(task) } label: {
+                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                        .foregroundColor(task.isCompleted ? task.reward.color : .gray)
                 }
-                .swipeActions(edge: .trailing) {
-                    Button {
-                        taskToEdit.wrappedValue = task
-                        editedTitle.wrappedValue = task.safeTitle
-                        showEditAlert.wrappedValue = true
-                    } label: {
-                        Label("수정", systemImage: "pencil")
-                    }
-                    .tint(.blue)
-
-                    Button(role: .destructive) {
-                        taskToDelete.wrappedValue = task
-                        showDeleteAlert.wrappedValue = true
-                    } label: {
-                        Label("삭제", systemImage: "trash")
-                    }
-                    .tint(.red)
-                }
+                Image(systemName: task.taskType.icon)
+                    .foregroundColor(task.taskType.color)
+                Text(task.safeTitle)
+                    .strikethrough(task.isCompleted)
+                    .foregroundColor(task.isCompleted ? .gray : task.reward.color)
+                Spacer()
             }
         }
+        .contentShape(Rectangle()) // ⬅️ 이거 매우 중요! 전체 행을 터치 영역으로 지정
+        .swipeActions(edge: .leading) {
+            Button {
+                toggleToday(task)
+            } label: {
+                Label(task.isToday ? "해제" : "오늘", systemImage: task.isToday ? "xmark" : "trophy")
+            }.tint(task.isToday ? .pink : .teal)
+        }
+        .swipeActions(edge: .trailing) {
+             Button {
+                 taskToEdit.wrappedValue = task
+                 editedTitle.wrappedValue = task.safeTitle
+                 showEditAlert.wrappedValue = true
+             } label: {
+                 Label("수정", systemImage: "pencil")
+             }
+             .tint(.blue)
+
+             Button(role: .destructive) {
+                 taskToDelete.wrappedValue = task
+                 showDeleteAlert.wrappedValue = true
+             } label: {
+                 Label("삭제", systemImage: "trash")
+             }
+             .tint(.red)
+         }
     }
     
     @MainActor
@@ -246,21 +314,46 @@ struct MainTodoView: View {
         task.isCompleted.toggle()
         task.completedAt = task.isCompleted ? Date() : nil
 
-        let point = task.reward.pointValue
+        let basePoint = task.reward.pointValue
+        var earned = 0
 
         if task.isCompleted {
-            user.points += Int32(point)
-            totalPoints += point
+           
+            // ── 완료 시 ────────────────────────────────
+            var multiplier = 1
+            // ▸ 오늘 큐 + 만료 이전 + 아직 보너스 미지급 → 2배
+            if task.isToday,
+               let exp = task.todayExpires,
+               Date() < exp,
+               task.bonusGranted == false {
+                multiplier = 2
+                task.bonusGranted = true   // 중복 지급 방지
+            }
+
+            earned = basePoint * multiplier
+            user.points += Int32(earned)
+            totalPoints += earned
+
+            // ▸ 완료하면 오늘 큐 해제
+            task.isToday = false
+            task.todayAssignedAt = nil
         } else {
-            if(user.points - Int32(point) >= 0){
-                user.points -= Int32(point)
-                totalPoints -= point
-            }
-            else{
-                user.points = 0
-                totalPoints = 0
-            }
+
+            // ── 체크 해제(완료 취소) ────────────────────
+            earned = basePoint * (task.bonusGranted ? 2 : 1)
+            task.bonusGranted = false
+
+            let newPointTotal = max(Int(user.points) - earned, 0)
+            user.points = Int32(newPointTotal)
+            totalPoints = max(totalPoints - earned, 0)
                 
+            // 만약 아직 만료되지 않은 "오늘의 할 일"이면 → 다시 되살림
+            if let exp = task.todayExpires, Date() < exp {
+                task.isToday = true
+                if task.todayAssignedAt == nil {
+                    task.todayAssignedAt = Date()
+                }
+            }
         }
 
         //saveContext()

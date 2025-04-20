@@ -9,6 +9,10 @@
 /* Begin PBXBuildFile section */
 		3B3E70DE2D9C05E900A18A90 /* CSVManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B3E70DD2D9C05E400A18A90 /* CSVManager.swift */; };
 		3B6CEE552D9C272D002E9672 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6CEE542D9C2728002E9672 /* AppDelegate.swift */; };
+		3BD27DED2DB529770077BE02 /* MappingModel.xcmappingmodel in Sources */ = {isa = PBXBuildFile; fileRef = 3BD27DEC2DB529770077BE02 /* MappingModel.xcmappingmodel */; };
+		3BD27DEF2DB52A730077BE02 /* TaskEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD27DEE2DB52A730077BE02 /* TaskEntity+CoreDataProperties.swift */; };
+		3BD27DF12DB52B180077BE02 /* MainTodoView+Today.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD27DF02DB52B160077BE02 /* MainTodoView+Today.swift */; };
+		3BD27DF32DB543CD0077BE02 /* TodayQueueManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD27DF22DB543C60077BE02 /* TodayQueueManager.swift */; };
 		3BF6A96D2D992B4D008BCDE0 /* refactor_project_structure.sh in Resources */ = {isa = PBXBuildFile; fileRef = 3BF6A96C2D992B44008BCDE0 /* refactor_project_structure.sh */; };
 		3BF6AA022D9931D9008BCDE0 /* RedemptionEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF6A9DE2D9931D9008BCDE0 /* RedemptionEntity+CoreDataProperties.swift */; };
 		3BF6AA032D9931D9008BCDE0 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF6A9E62D9931D9008BCDE0 /* Model.swift */; };
@@ -67,6 +71,11 @@
 		3B6CEE542D9C2728002E9672 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		3BBD78932D993A9700FC39E3 /* JjingToDoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JjingToDoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BD1D9A62D91513C00F25096 /* JjingToDo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JjingToDo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3BD27DE92DB5289C0077BE02 /* DataModel 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "DataModel 2.xcdatamodel"; sourceTree = "<group>"; };
+		3BD27DEC2DB529770077BE02 /* MappingModel.xcmappingmodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcmappingmodel; path = MappingModel.xcmappingmodel; sourceTree = "<group>"; };
+		3BD27DEE2DB52A730077BE02 /* TaskEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TaskEntity+CoreDataProperties.swift"; path = "Models/TaskEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		3BD27DF02DB52B160077BE02 /* MainTodoView+Today.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MainTodoView+Today.swift"; sourceTree = "<group>"; };
+		3BD27DF22DB543C60077BE02 /* TodayQueueManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayQueueManager.swift; sourceTree = "<group>"; };
 		3BF6A96C2D992B44008BCDE0 /* refactor_project_structure.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = refactor_project_structure.sh; sourceTree = "<group>"; };
 		3BF6A9D72D9931D9008BCDE0 /* JjingToDoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JjingToDoApp.swift; sourceTree = "<group>"; };
 		3BF6A9D92D9931D9008BCDE0 /* appstore.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = appstore.png; sourceTree = "<group>"; };
@@ -144,6 +153,7 @@
 		3BD1D99D2D91513C00F25096 = {
 			isa = PBXGroup;
 			children = (
+				3BD27DEE2DB52A730077BE02 /* TaskEntity+CoreDataProperties.swift */,
 				3BF6AA1E2D9933FB008BCDE0 /* JjingToDo.entitlements */,
 				3BF6A9D82D9931D9008BCDE0 /* App */,
 				3BF6A9E12D9931D9008BCDE0 /* Archived */,
@@ -204,6 +214,7 @@
 		3BF6A9E52D9931D9008BCDE0 /* Managers */ = {
 			isa = PBXGroup;
 			children = (
+				3BD27DF22DB543C60077BE02 /* TodayQueueManager.swift */,
 				3B3E70DD2D9C05E400A18A90 /* CSVManager.swift */,
 				3BF6A9E42D9931D9008BCDE0 /* Persistence.swift */,
 			);
@@ -247,6 +258,7 @@
 				3BF6A9F22D9931D9008BCDE0 /* DataModel.xcdatamodeld */,
 				3BF6A9D92D9931D9008BCDE0 /* appstore.png */,
 				3BF6A9DB2D9931D9008BCDE0 /* playstore.png */,
+				3BD27DEC2DB529770077BE02 /* MappingModel.xcmappingmodel */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -261,6 +273,7 @@
 		3BF6A9FF2D9931D9008BCDE0 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3BD27DF02DB52B160077BE02 /* MainTodoView+Today.swift */,
 				3BF6A9FA2D9931D9008BCDE0 /* AddRewardView.swift */,
 				3BF6A9FB2D9931D9008BCDE0 /* ContentView.swift */,
 				3BF6A9FC2D9931D9008BCDE0 /* DebugToolView.swift */,
@@ -397,6 +410,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3BF6AA022D9931D9008BCDE0 /* RedemptionEntity+CoreDataProperties.swift in Sources */,
+				3BD27DEF2DB52A730077BE02 /* TaskEntity+CoreDataProperties.swift in Sources */,
 				3BF6AA032D9931D9008BCDE0 /* Model.swift in Sources */,
 				3B3E70DE2D9C05E900A18A90 /* CSVManager.swift in Sources */,
 				3BF6AA202D993638008BCDE0 /* Preview.swift in Sources */,
@@ -405,13 +419,16 @@
 				3BF6AA062D9931D9008BCDE0 /* RewardListView.swift in Sources */,
 				3BF6AA072D9931D9008BCDE0 /* UserEntity+CoreDataClass.swift in Sources */,
 				3BF6AA082D9931D9008BCDE0 /* RedemptionEntity+Extensions.swift in Sources */,
+				3BD27DF32DB543CD0077BE02 /* TodayQueueManager.swift in Sources */,
 				3BF6AA092D9931D9008BCDE0 /* DebugToolView.swift in Sources */,
 				3BF6AA0A2D9931D9008BCDE0 /* TaskEntity+CoreDataClass.swift in Sources */,
 				3BF6AA0B2D9931D9008BCDE0 /* AddRewardView.swift in Sources */,
 				3BF6AA0E2D9931D9008BCDE0 /* MainTodoView.swift in Sources */,
+				3BD27DF12DB52B180077BE02 /* MainTodoView+Today.swift in Sources */,
 				3BF6AA0F2D9931D9008BCDE0 /* Persistence.swift in Sources */,
 				3BF6AA102D9931D9008BCDE0 /* TaskEntity+Extensions.swift in Sources */,
 				3BF6AA112D9931D9008BCDE0 /* TaskEntity+CoreDataProperties.swift in Sources */,
+				3BD27DED2DB529770077BE02 /* MappingModel.xcmappingmodel in Sources */,
 				3BF6AA122D9931D9008BCDE0 /* DataModel.xcdatamodeld in Sources */,
 				3BF6AA132D9931D9008BCDE0 /* RedemptionHistoryView.swift in Sources */,
 				3B6CEE552D9C272D002E9672 /* AppDelegate.swift in Sources */,
@@ -609,7 +626,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UIStatusBarStyle = "";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -658,7 +675,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UIStatusBarStyle = "";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -717,9 +734,10 @@
 		3BF6A9F22D9931D9008BCDE0 /* DataModel.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				3BD27DE92DB5289C0077BE02 /* DataModel 2.xcdatamodel */,
 				3BF6AA012D9931D9008BCDE0 /* DataModel.xcdatamodel */,
 			);
-			currentVersion = 3BF6AA012D9931D9008BCDE0 /* DataModel.xcdatamodel */;
+			currentVersion = 3BD27DE92DB5289C0077BE02 /* DataModel 2.xcdatamodel */;
 			path = DataModel.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

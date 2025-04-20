@@ -8,7 +8,7 @@
 import Foundation
 import CoreData
 
-extension TaskEntity: Identifiable {
+extension TaskEntity/*: Identifiable*/ {
     var reward: RewardLevel {
         get { RewardLevel(rawValue: Int(self.rewardLevelRaw)) ?? .easy }
         set { self.rewardLevelRaw = Int16(newValue.rawValue) }
