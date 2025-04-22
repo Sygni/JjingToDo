@@ -55,11 +55,6 @@ struct MainTodoView: View {
     var body: some View {
         
         ZStack {
-            Color.clear
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    UIApplication.shared.endEditing()
-                }
 
             VStack {
                 // 여기에 할 일 리스트나 다른 UI 추가
@@ -135,6 +130,9 @@ struct MainTodoView: View {
                     .scrollContentBackground(.hidden)            // 리스트 배경 투명
                     .padding(.horizontal, -4)                    // 좌우 살짝 붙이기(선택)
                     .animation(.default, value: todayTasks.count)
+                    .simultaneousGesture(TapGesture().onEnded {
+                        UIApplication.shared.endEditing()   // 20250422 아무데나 탭하면 키보드 내려가도록 하는 처리용
+                    })
                     
                 }
                 .alert("이 항목을 삭제할까요?", isPresented: $showDeleteAlert, presenting: taskToDelete) { task in
@@ -272,6 +270,9 @@ struct MainTodoView: View {
                 Button { toggleTask(task) } label: {
                     Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
                         .foregroundColor(task.isCompleted ? task.reward.color : .gray)
+                        .onTapGesture {
+                            toggleTask(task)  // ✅ 여기만 반응하게
+                        }
                 }
                 Image(systemName: task.taskType.icon)
                     .foregroundColor(task.taskType.color)
@@ -317,6 +318,8 @@ struct MainTodoView: View {
         let basePoint = task.reward.pointValue
         var earned = 0
 
+        let expired = !(task.todayExpires.map { Date() < $0 } ?? false)
+        
         if task.isCompleted {
            
             // ── 완료 시 ────────────────────────────────
@@ -336,7 +339,9 @@ struct MainTodoView: View {
 
             // ▸ 완료하면 오늘 큐 해제
             task.isToday = false
-            task.todayAssignedAt = nil
+            if expired {
+                task.todayAssignedAt = nil
+            }
         } else {
 
             // ── 체크 해제(완료 취소) ────────────────────
@@ -348,7 +353,7 @@ struct MainTodoView: View {
             totalPoints = max(totalPoints - earned, 0)
                 
             // 만약 아직 만료되지 않은 "오늘의 할 일"이면 → 다시 되살림
-            if let exp = task.todayExpires, Date() < exp {
+            if !expired {
                 task.isToday = true
                 if task.todayAssignedAt == nil {
                     task.todayAssignedAt = Date()

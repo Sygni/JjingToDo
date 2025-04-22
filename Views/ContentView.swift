@@ -4,8 +4,8 @@ struct ContentView: View {
     
     @Environment(\.managedObjectContext) private var viewContext
     
-    //@State private var tasks: [Task] = []     // 20250327 CoreData 추가로 리팩토링 - TaskEntity 기반으로 변경
-    //@State private var redemptions: [Redemption] = [] // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
+    // 20250422 새벽 2시에 백그라운드 작업 안 도는 문제 해결
+    @Environment(\.scenePhase) private var scenePhase
     
     @State private var refreshToken = UUID()    // 20250328 Debug View 리프레시용
     
@@ -26,15 +26,6 @@ struct ContentView: View {
                     }
                     .id(refreshToken)
                     //.tint(Color(hex: "#68BBE3"))  //안 먹히는듯...
-
-                //RedemptionHistoryView(tasks: $tasks, redemptions: $redemptions)   // 20250327
-                // 20250328 리워드 탭 확장 개선으로 Redemption 구조는 제거
-/*                RedemptionHistoryView()
-                    .tabItem {
-                        Label("보상 기록", systemImage: "list.bullet.rectangle")
-                    }
-                    //.tint(Color(hex: "#68BBE3"))
-*/
   
                 // 20250421 챌린지 탭 추가
                 ChallengeTabView()
@@ -59,6 +50,12 @@ struct ContentView: View {
 #endif
             }
             .accentColor(Color(hex: "#68BBE3"))
+            .onChange(of: scenePhase) { newPhase in     // 20250422 오늘의할일 새벽 2시 리셋용
+                if newPhase == .active {
+                    print("🌞 scenePhase.active → todayQueue 강제 체크")
+                    TodayQueueManager.shared.resetExpiredTodayTasks()
+                }
+            }
         } else {
             // 유저가 없으면 자동 생성
             Color.clear
@@ -66,7 +63,6 @@ struct ContentView: View {
                     createUser()
                 }
         }
-        
     }
     
     private func createUser() {

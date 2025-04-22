@@ -1,5 +1,11 @@
 # 🛠️ JjingTodo 개발 로그
 
+## 2025-04-22
+🔧 오늘의할일 새벽 2시에 리셋 안 되는 문제 수정 → BGTask 디버깅 모드에서는 한계 있어서 & scenePhase로 해결
+🔧 오늘의할일 아이템 완료 체크했다 해제할 때 오늘의할일 복귀 안 되는 문제 → todayAssignedAt 초기화 순서 문제 해결
+🔧 리스트 셀 어디나 누르면 완료돼버리는 문제 → 체크 아이콘만 반응하게 수정
+🔧 키보드 이외 영역 터치 시 키보드 내려가기 기능 유지 → .simultaneousGesture()로 충돌 없이 통합 
+
 ## 2025-04-21
 ➕ 챌린지 탭 + "추구미 보상" 버튼 기능 추가
 - ChugumiActionEntity CoreData 모델 설계 완료 (type, timestamp, memo, point)

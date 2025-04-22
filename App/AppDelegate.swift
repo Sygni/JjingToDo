@@ -48,4 +48,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
         return true
     }
+    
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        print("🌞 앱 포그라운드 → todayQueue 강제 체크")
+        TodayQueueManager.shared.resetExpiredTodayTasks()
+    }
 }

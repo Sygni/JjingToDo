@@ -49,6 +49,8 @@ final class TodayQueueManager {
     }
 
     private func handleResetTask(task: BGAppRefreshTask) {
+        print("🔥🔥🔥 handleResetTask() called at \(Date())")
+        
         scheduleReset() // schedule for tomorrow first
         let queue = OperationQueue()
         queue.maxConcurrentOperationCount = 1
