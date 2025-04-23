@@ -38,6 +38,9 @@ struct MainTodoView: View {
     @State /*private*/ var showTodayLimitAlert = false
     @State /*private*/ var todayLimitMessage = ""
     
+    // 20250423 투두리스트에 타입 필터 추가
+    @State /*private*/ var selectedFilterType: TaskType? = nil  // 전체(default nil), 개인/업무/공부 등
+    
     let taskKey = "savedTasks"
     let pointKey = "savedPoints"
     let totalPointKey = "savedTotalPoints"
@@ -51,7 +54,7 @@ struct MainTodoView: View {
         
         return incomplete + complete
     }
-
+    
     var body: some View {
         
         ZStack {
@@ -101,7 +104,35 @@ struct MainTodoView: View {
                         }
 
                         // ── 기본 태스크 섹션 ──────────────────────────────
-                        Section {
+                        Section(
+                            header:
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack {
+                                        Image(systemName: "flag.checkered")
+                                            .foregroundColor(.gray)
+                                        Text("Quest")
+                                            .font(.headline)
+                                            .fontWeight(.bold)
+                                    }
+                                    
+                                    // 20250423 투두리스트에 타입 필터 추가
+                                    // 슬라이딩 타입이 불편(항목 4개) --> 추후 개선
+                                    Picker("필터", selection: $selectedFilterType) {
+                                        Text("전체").tag(nil as TaskType?)
+                                        ForEach(TaskType.allCases, id: \.self) { type in
+                                            Text(type.label).tag(type as TaskType?)
+                                        }
+                                    }
+                                    .pickerStyle(SegmentedPickerStyle())
+                                    //.padding(.bottom, 8)
+                                    Divider()
+                                        .frame(maxWidth: .infinity)
+                                        .background(Color.accentColor)
+                                }
+                                .padding(.top, 6)
+                                .padding(.leading, -8)      // 리스트 인셋 만큼 보정
+                                .background(Color(.systemBackground))
+                        ) {
                             ForEach(otherTasks) { task in
                                 //taskRow(task)
                                 taskRow(
@@ -113,17 +144,6 @@ struct MainTodoView: View {
                                     showDeleteAlert: $showDeleteAlert
                                 )
                             }
-                        } header: {
-                            HStack {
-                                Image(systemName: "flag.checkered")
-                                    .foregroundColor(.gray)
-                                Text("Quest")
-                                    .font(.headline)
-                                    .fontWeight(.bold)
-                            }
-                            .padding(.top, 6)
-                            .padding(.leading, -8)      // 리스트 인셋 만큼 보정
-                            .background(Color(.systemBackground))
                         }
                     }
                     .listStyle(.plain)

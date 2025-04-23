@@ -17,10 +17,18 @@ extension MainTodoView {
     }
 
     /// 나머지(일반) 태스크
+    /// 20250423 투두리스트에 타입 필터 추가
     var otherTasks: [TaskEntity] {
-        sortedTaskEntities.filter { !$0.isToday }
+        let base = sortedTaskEntities.filter { !$0.isToday }
+
+        if let selected = selectedFilterType {
+            return base.filter { $0.taskType == selected }
+        } else {
+            return base
+        }
     }
 
+    
     /// 오늘 할 일 토글
     @MainActor
     func toggleToday(_ task: TaskEntity) {
