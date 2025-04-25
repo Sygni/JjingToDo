@@ -60,12 +60,12 @@ struct DebugToolView: View {
                     .alert(isPresented: $showExportConfirmation) {
                         Alert(
                             title: Text("백업 완료"),
-                            message: Text("tasks.csv 와 rewards.csv 파일이 파일 앱에 저장되었습니다."),
+                            message: Text("Task, Reward, User 데이터가 Files에 저장되었습니다."),
                             dismissButton: .default(Text("확인"))
                         )
                     }
 
-                    Button("📥 전체 CSV 불러오기") {
+                    Button("📥 CSV 불러오기") {
                         //CSVManager.importAllCSVFromDocuments(context: viewContext)
                         importEntityType = nil  // ✅ 전체 불러오기용 시그널
                         showImportPicker = true

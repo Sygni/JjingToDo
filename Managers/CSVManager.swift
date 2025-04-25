@@ -24,42 +24,46 @@ struct CSVManager {
             let rows = content.components(separatedBy: "\n").filter { !$0.isEmpty }
             guard rows.count > 1 else { return }
 
-            let keys = rows[0].components(separatedBy: ",").map { $0.replacingOccurrences(of: "\"", with: "") }
-            let values = rows[1].components(separatedBy: ",")
-            //let values = parseCSVLine(rows[1])
-
+            let keys = rows[0]
+                .components(separatedBy: ",")
+                .map { $0.replacingOccurrences(of: "\"", with: "").trimmingCharacters(in: .whitespacesAndNewlines) }
+            let values = rows[1]
+                .components(separatedBy: ",")
+                .map { $0.replacingOccurrences(of: "\"", with: "").trimmingCharacters(in: .whitespacesAndNewlines) }
+            
             // ✅ 기존 유저 전부 삭제
             let fetchRequest: NSFetchRequest<UserEntity> = UserEntity.fetchRequest()
             let existingUsers = try context.fetch(fetchRequest)
-            for user in existingUsers {
-                context.delete(user)
+            
+            if existingUsers.count != 1 {
+                print("⚠️ UserEntity 수: \(existingUsers.count) → 강제 초기화")
+                //existingUsers.forEach { context.delete($0) }
+                for user in existingUsers {
+                    context.delete(user)
+                }
+                try context.save() // 삭제 후 저장
             }
+
+            // ✅ 기존 유저가 있으면 재사용, 없으면 새로 생성
+            // 🔥 삭제 후 다시 fetch
+            let refreshedFetch = try context.fetch(fetchRequest)
+            let user = refreshedFetch.first ?? UserEntity(context: context)
             
-            //let request: NSFetchRequest<UserEntity> = UserEntity.fetchRequest()
-            //let users = try context.fetch(request)
-            //let user = users.first ?? UserEntity(context: context)
-            
-            // ✅ 새 유저 생성
-            let user = UserEntity(context: context)
-            
-            /*
             for (index, key) in keys.enumerated() where index < values.count {
                 let value = values[index]
-                switch key.trimmingCharacters(in: .whitespacesAndNewlines) {
-                case "points": user.points = Int32(value) ?? 0
-                case "lifetimePoints": user.lifetimePoints = Int64(value) ?? 0
-                default: break
-                }
-            }
-            */
-            for (index, key) in keys.enumerated() where index < values.count {
-                let cleanedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
-                let value = values[index].trimmingCharacters(in: .whitespacesAndNewlines)
-
-                switch cleanedKey {
+                
+                switch key {
                 case "id":
                     if let uuid = UUID(uuidString: value) {
-                        user.id = uuid
+                        if user.id != uuid {
+                            // 나 자신이 아닌, 중복된 UUID 가진 객체 있으면 제거
+                            let duplicateRequest: NSFetchRequest<UserEntity> = UserEntity.fetchRequest()
+                            duplicateRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
+                            let duplicates = try? context.fetch(duplicateRequest)
+                            duplicates?.filter { $0 != user }.forEach { context.delete($0) }
+
+                            user.id = uuid
+                        }
                     } else {
                         print("❌ 잘못된 UUID: \(value)")
                     }
@@ -76,7 +80,7 @@ struct CSVManager {
                 case "lifetimePoints":
                     user.lifetimePoints = Int64(value) ?? 0
                 default:
-                    print("⚠️ 매핑되지 않은 키: \(cleanedKey)")
+                    print("⚠️ 매핑되지 않은 키: \(key/*cleanedKey*/)")
                     break
                 }
             }
@@ -84,9 +88,6 @@ struct CSVManager {
             try context.save()
             print("✅ UserEntity 복원 완료")
             
-            // 20250402 디버그용 로그
-            //let debug_request: NSFetchRequest<UserEntity> = UserEntity.fetchRequest()
-            //let debug_users = try context.fetch(debug_request)
             let debug_users = try context.fetch(fetchRequest)
             print("👥 현재 UserEntity 개수: \(debug_users.count)")
             for user in debug_users {
@@ -194,7 +195,8 @@ struct CSVManager {
                     importCSV(url: url, into: RewardEntity.self, context: context)
                 } else if filename.contains("user") {
                     print("📥 유저 복원 시작: \(filename)")
-                    importCSV(url: url, into: UserEntity.self, context: context)
+                    //importCSV(url: url, into: UserEntity.self, context: context)
+                    importUserFromCSV(url: url, context: context)
                 } else {
                     print("⚠️ 인식할 수 없는 파일: \(filename) → 스킵됨")
                 }
