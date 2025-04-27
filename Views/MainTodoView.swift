@@ -45,6 +45,33 @@ struct MainTodoView: View {
     let pointKey = "savedPoints"
     let totalPointKey = "savedTotalPoints"
     
+    init(user: UserEntity) {
+        self.user = user
+
+        // 헤더 배경 투명하게 만들기
+        /*UITableViewHeaderFooterView.appearance().backgroundView = {
+            let view = UIView()
+            view.backgroundColor = .clear
+            return view
+        }()
+         */
+        
+        
+        let appearance = UITableView.appearance()
+        appearance.backgroundColor = .clear
+        appearance.separatorStyle = .none
+        appearance.sectionHeaderTopPadding = 0
+        appearance.sectionHeaderHeight = 0  // 추가!
+        
+        let headerFooterAppearance = UITableViewHeaderFooterView.appearance()
+        headerFooterAppearance.tintColor = .clear
+        headerFooterAppearance.backgroundView = {
+            let view = UIView()
+            view.backgroundColor = .clear
+            return view
+        }()
+    }
+    
     var sortedTaskEntities: [TaskEntity] {
         let incomplete = taskEntities.filter { !$0.isCompleted }
             .sorted(by: { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) })
@@ -99,7 +126,8 @@ struct MainTodoView: View {
                                 }
                                 .padding(.top, 4)
                                 //.padding(.leading, -8)      // 리스트 인셋 만큼 보정
-                                .background(Color(.systemBackground))
+                                //.background(Color(.systemBackground))     // 20250427 이렇게 하면 다크모드일 때 백그라운드에 Black 배경 생김 -> 투명하게 만들기 위해 Color.clear로 수정
+                                .background(Color.clear)
                             }
                         }
 
@@ -131,7 +159,8 @@ struct MainTodoView: View {
                                 }
                                 .padding(.top, 6)
                                 .padding(.leading, -8)      // 리스트 인셋 만큼 보정
-                                .background(Color(.systemBackground))
+                                //.background(Color(.systemBackground))     // 20250427 이렇게 하면 다크모드일 때 백그라운드에 Black 배경 생김 -> 투명하게 만들기 위해 Color.clear로 수정
+                                .background(Color.clear)
                         ) {
                             ForEach(otherTasks) { task in
                                 //taskRow(task)
@@ -290,10 +319,14 @@ struct MainTodoView: View {
                 Button { toggleTask(task) } label: {
                     Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
                         .foregroundColor(task.isCompleted ? task.reward.color : .gray)
-                        .onTapGesture {
+                        // 20250427 리스트 글자 부분에 long-press 시에 체크한 걸로 처리되는 문제 해결
+                        // 아래 라인 제거
+                        /*.onTapGesture {
                             toggleTask(task)  // ✅ 여기만 반응하게
-                        }
+                        }*/
                 }
+                .buttonStyle(.plain)    // ✅ 버튼 눌렀을 때 깜빡이는 효과 없애기 (있으면 거슬림)
+                
                 Image(systemName: task.taskType.icon)
                     .foregroundColor(task.taskType.color)
                 Text(task.safeTitle)

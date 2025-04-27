@@ -1,5 +1,12 @@
 # 🛠️ JjingTodo 개발 로그
 
+## 2025-04-27 (v1.5.4)
+🔧 투두리스트에서 항목 long press 시에 체크되는 문제 수정
+- image에 onTapGesture 들어가 있어서 발생 -> 이 부분 삭제하고 toggleTask()만 남김
+🔧 다크모드일 때 Today's Mission, Quest 등 리스트 제목 부분 뒷배경이 검은 사각형으로 튀는 문제 수정
+- .background()가 systemBackground로 설정되어 있어서 색 처리가 들어가서 발생한 문제 -> Color.clear로 변경하여 수정
+💾 iOS 17 이상으로 디바이스 타겟 변경
+
 ## 2025-04-25 (v1.5.3)
 🔧 백업에서 user.csv 불러오기했을 때 UserEntity에 저장된 points가 복구 안 되는 문제 수정
 - 원인: 백업 내보내기할 때 UserEntity가 중복/추가로 row 생성되고 있었는데, 앱 로직상으로는 1개 이상의 UserEntity를 처리하지 못함 + .csv에서 Date/UUID 등 모든 필드에 ""를 붙여서 내보내고 있는데 불러올 때는 따옴표 제거 안 해서 에러
