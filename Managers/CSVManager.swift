@@ -269,6 +269,8 @@ struct CSVManager {
                 CSVManager.importCSV(url: url, into: RewardEntity.self, context: context)
             case "user.csv":
                 CSVManager.importUserFromCSV(url: url, context: context)
+            case "challenges.csv":
+                CSVManager.importCSV(url: url, into: ChallengeEntity.self, context: context)
             default:
                 print("⚠️ 알 수 없는 파일 무시됨: \(filename)")
             }

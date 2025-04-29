@@ -53,14 +53,14 @@ struct DebugToolView: View {
                 }
 
                 Section(header: Text("📦 백업 및 복원")) {
-                    Button("📤 CSV 백업 (Task + Reward)") {
+                    Button("📤 CSV 백업(All Data)") {
                         exportAllToDocuments()
                         showExportConfirmation = true
                     }
                     .alert(isPresented: $showExportConfirmation) {
                         Alert(
                             title: Text("백업 완료"),
-                            message: Text("Task, Reward, User 데이터가 Files에 저장되었습니다."),
+                            message: Text("Task, Reward, User, Challenge 데이터가 Files에 저장되었습니다."),
                             dismissButton: .default(Text("확인"))
                         )
                     }
@@ -134,6 +134,7 @@ struct DebugToolView: View {
         _ = CSVManager.exportEntityToCSVToDocuments(entityName: "TaskEntity", filename: "tasks", context: viewContext)
         _ = CSVManager.exportEntityToCSVToDocuments(entityName: "RewardEntity", filename: "rewards", context: viewContext)
         _ = CSVManager.exportEntityToCSVToDocuments(entityName: "UserEntity", filename: "user", context: viewContext)
+        _ = CSVManager.exportEntityToCSVToDocuments(entityName: "ChallengeEntity", filename: "challenges", context: viewContext)
         print("✅ CSV 백업 완료 (Document 디렉토리)")
     }
 

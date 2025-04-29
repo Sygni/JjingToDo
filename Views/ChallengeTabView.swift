@@ -15,76 +15,145 @@ struct ChallengeTabView: View {
     //Animation effect
     @State private var showPoint = false
     
+    // 20250429 Challenge 기능 추가 시작
+    @StateObject private var challengeViewModel = ChallengeViewModel()
+    @State private var showAddChallenge = false
+    @State private var newChallengeTitle = ""
+    
     let chugumiBackground = Color(hex: "#79e5cb").opacity(0.15)
     
     var body: some View {
         ZStack{
             chugumiBackground.ignoresSafeArea()
             
-            VStack(spacing: 24) {
-                Text("🧘‍♀️ 추구미를 존중했나요? 🏋️‍♀️")
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
-                    //.font(Font(UIFont(name: "HelveticaNeue", size: 22)!))
-                    .foregroundColor(.primary)
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.mint, .blue],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    //.overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#79e5cb"), lineWidth: 1))
-                    .padding(.top, 16)
-                
-                HStack(spacing: 32) {
-                    ChugumiBunnyButton(
-                        imageName: "bunny_hold",
-                        label: "참기",
-                        type: "참기"
-                    ) { selectedType in
-                        currentType = selectedType
-                        showMemoAlert = true
-                    }
-                    
-                    ChugumiBunnyButton(
-                        imageName: "bunny_do",
-                        label: "하기",
-                        type: "하기"
-                    ) { selectedType in
-                        currentType = selectedType
-                        showMemoAlert = true
-                    }
-                }
-                
-                Spacer()
-            }
-            .padding()
-            
-            // 포인트 애니메이션
-            if showPoint {
-                Text("🎁 +160 🎉")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(Color(hex: "#79e5cb"))
-                    .scaleEffect(showPoint ? 1.3 : 0.2) // 팡!
-                    .opacity(showPoint ? 1 : 0.2)         // 서서히 사라짐
-                    .offset(y: showPoint ? -70 : -150) // 살짝 위로 뜸
-                    .onAppear {
-                        // 초기 팡!
-                        /*withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                            showPoint = true
-                        }*/
-                        withAnimation(.interpolatingSpring(stiffness: 200, damping: 5)) {
-                            showPoint = true
-                        }
-                        // 사라지는 부분
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                            withAnimation(.easeOut(duration: 0.6)) {
-                                showPoint = false
+            ScrollView{
+                VStack(spacing: 8) {
+                    // 🧘‍♀️ 추구미 영역 (ChugumiZone)
+                    VStack() {
+                        Text("🧘‍♀️ 추구미를 존중했나요? 🏋️‍♀️")
+                            .font(.system(size: 22, weight: .semibold, design: .rounded))
+                        //.font(Font(UIFont(name: "HelveticaNeue", size: 22)!))
+                            .foregroundColor(.primary)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.mint, .blue],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                        //.overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#79e5cb"), lineWidth: 1))
+                            .padding(.top, 16)
+                        
+                        HStack(spacing: 32) {
+                            ChugumiBunnyButton(
+                                imageName: "bunny_hold",
+                                label: "참기",
+                                type: "참기"
+                            ) { selectedType in
+                                currentType = selectedType
+                                showMemoAlert = true
+                            }
+                            
+                            ChugumiBunnyButton(
+                                imageName: "bunny_do",
+                                label: "하기",
+                                type: "하기"
+                            ) { selectedType in
+                                currentType = selectedType
+                                showMemoAlert = true
                             }
                         }
                     }
+                    .padding()
+                    /* 안 이쁨
+                     .background(
+                     RoundedRectangle(cornerRadius: 16)
+                     .fill(Color.white.opacity(0.6))
+                     )*/
+                    
+                    // 포인트 애니메이션
+                    if showPoint {
+                        Text("🎁 +160 🎉")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(Color(hex: "#79e5cb"))
+                            .scaleEffect(showPoint ? 1.3 : 0.2) // 팡!
+                            .opacity(showPoint ? 1 : 0.2)         // 서서히 사라짐
+                            .offset(y: showPoint ? -70 : -150) // 살짝 위로 뜸
+                            .onAppear {
+                                // 초기 팡!
+                                /*withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                                 showPoint = true
+                                 }*/
+                                withAnimation(.interpolatingSpring(stiffness: 200, damping: 5)) {
+                                    showPoint = true
+                                }
+                                // 사라지는 부분
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                                    withAnimation(.easeOut(duration: 0.6)) {
+                                        showPoint = false
+                                    }
+                                }
+                            }
+                    }
+                    
+                    // 20250429 Challenge 기능 추가 시작
+                    // ✨ 루틴 챌린지 영역 (ChallengeZone)
+                    VStack(spacing: 8) {
+                        HStack {
+                            Text("👩‍🎓Jelina🏋️‍♀️")
+                                .font(.title3)
+                                .bold()
+                            
+                            Spacer()
+                           
+                            /*
+                            Button(action: {
+                                challengeViewModel.addChallenge(title: "새 챌린지 \(Date().formatted())")
+                            }) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title2)
+                                    //.foregroundColor(Color(hex: "#79e5cb"))
+                            }
+                             */
+                            Button(action: {
+                                showAddChallenge = true
+                            }) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title2)
+                            }
+                            .sheet(isPresented: $showAddChallenge) {
+                                AddChallengeView(
+                                    title: $newChallengeTitle,
+                                    onSave: {
+                                        challengeViewModel.addChallenge(title: newChallengeTitle)
+                                        newChallengeTitle = ""
+                                        showAddChallenge = false
+                                    },
+                                    onCancel: {
+                                        newChallengeTitle = ""
+                                        showAddChallenge = false
+                                    }
+                                )
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        
+                        ChallengeListInTabView(viewModel: challengeViewModel)
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.clear)
+                            //.shadow(radius: 3)
+                    )
+                    
+                }
+                .padding(.horizontal, 8)
+                
+                Spacer(minLength: 20)
             }
+            .frame(maxWidth: .infinity, alignment: .top)
         }
         .alert("추구미 기록", isPresented: $showMemoAlert) {
             TextField("메모를 입력하세요 (선택)", text: $memoText)

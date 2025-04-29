@@ -83,9 +83,7 @@ struct MainTodoView: View {
     }
     
     var body: some View {
-        
         ZStack {
-
             VStack {
                 // 여기에 할 일 리스트나 다른 UI 추가
                 VStack(spacing: 16) {
