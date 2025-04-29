@@ -144,7 +144,6 @@ struct MainTodoView: View {
                                     }
                                     
                                     // 20250423 투두리스트에 타입 필터 추가
-                                    // 슬라이딩 타입이 불편(항목 4개) --> 추후 개선
                                     Picker("필터", selection: $selectedFilterType) {
                                         Text("전체").tag(nil as TaskType?)
                                         ForEach(TaskType.allCases, id: \.self) { type in

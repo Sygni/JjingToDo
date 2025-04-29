@@ -101,4 +101,5 @@ enum TaskType: Int, Codable, CaseIterable {
         case .work: return .gray
         }
     }
+    
 }

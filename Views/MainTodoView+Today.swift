@@ -13,7 +13,8 @@ extension MainTodoView {
     var todayTasks: [TaskEntity] {
         taskEntities
             .filter { $0.isToday && !$0.isCompleted }
-            .sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) }
+            //.sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) }
+            .sorted { ($0.taskType.rawValue) < ($1.taskType.rawValue) }
     }
 
     /// 나머지(일반) 태스크
