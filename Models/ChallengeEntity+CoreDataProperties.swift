@@ -25,6 +25,7 @@ extension ChallengeEntity {
     @NSManaged public var totalCount: Int32
     @NSManaged public var rewardPoint: Int32
     @NSManaged public var frequencyCount: Int32
+    @NSManaged public var isMorningChallenge: Bool // 기본값 false
 
 }
 

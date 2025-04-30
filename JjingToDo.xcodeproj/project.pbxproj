@@ -18,6 +18,7 @@
 		3B5C5DBA2DC110FE0017B597 /* ChallengeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5C5DB92DC110FB0017B597 /* ChallengeViewModel.swift */; };
 		3B5C5DBC2DC113DD0017B597 /* ChallengeListInTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5C5DBB2DC113DA0017B597 /* ChallengeListInTabView.swift */; };
 		3B5C5DBE2DC12AF70017B597 /* AddChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5C5DBD2DC12AF40017B597 /* AddChallengeView.swift */; };
+		3B5C5DC02DC26DF50017B597 /* Date+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5C5DBF2DC26DEE0017B597 /* Date+Extensions.swift */; };
 		3B6CEE552D9C272D002E9672 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6CEE542D9C2728002E9672 /* AppDelegate.swift */; };
 		3BD27DED2DB529770077BE02 /* MappingModel.xcmappingmodel in Sources */ = {isa = PBXBuildFile; fileRef = 3BD27DEC2DB529770077BE02 /* MappingModel.xcmappingmodel */; };
 		3BD27DEF2DB52A730077BE02 /* TaskEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD27DEE2DB52A730077BE02 /* TaskEntity+CoreDataProperties.swift */; };
@@ -88,6 +89,7 @@
 		3B5C5DB92DC110FB0017B597 /* ChallengeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeViewModel.swift; sourceTree = "<group>"; };
 		3B5C5DBB2DC113DA0017B597 /* ChallengeListInTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeListInTabView.swift; sourceTree = "<group>"; };
 		3B5C5DBD2DC12AF40017B597 /* AddChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddChallengeView.swift; sourceTree = "<group>"; };
+		3B5C5DBF2DC26DEE0017B597 /* Date+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Extensions.swift"; sourceTree = "<group>"; };
 		3B6CEE542D9C2728002E9672 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		3BBD78932D993A9700FC39E3 /* JjingToDoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JjingToDoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BD1D9A62D91513C00F25096 /* JjingToDo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JjingToDo.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -225,6 +227,7 @@
 		3BF6A9E32D9931D9008BCDE0 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				3B5C5DBF2DC26DEE0017B597 /* Date+Extensions.swift */,
 				3BF6A9E22D9931D9008BCDE0 /* TaskEntity+Extensions.swift */,
 			);
 			path = Extensions;
@@ -233,7 +236,6 @@
 		3BF6A9E52D9931D9008BCDE0 /* Managers */ = {
 			isa = PBXGroup;
 			children = (
-				3B5C5DB92DC110FB0017B597 /* ChallengeViewModel.swift */,
 				3B5C5DAB2DB67C220017B597 /* ChugumiManager.swift */,
 				3BD27DF22DB543C60077BE02 /* TodayQueueManager.swift */,
 				3B3E70DD2D9C05E400A18A90 /* CSVManager.swift */,
@@ -255,6 +257,7 @@
 				3B5C5DAD2DB67C540017B597 /* ChugumiActionEntity+CoreDataClass.swift */,
 				3B5C5DAE2DB67C540017B597 /* ChugumiActionEntity+CoreDataProperties.swift */,
 				3BD27DEE2DB52A730077BE02 /* TaskEntity+CoreDataProperties.swift */,
+				3B5C5DB92DC110FB0017B597 /* ChallengeViewModel.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -468,6 +471,7 @@
 				3BF6AA112D9931D9008BCDE0 /* TaskEntity+CoreDataProperties.swift in Sources */,
 				3BD27DED2DB529770077BE02 /* MappingModel.xcmappingmodel in Sources */,
 				3BF6AA122D9931D9008BCDE0 /* DataModel.xcdatamodeld in Sources */,
+				3B5C5DC02DC26DF50017B597 /* Date+Extensions.swift in Sources */,
 				3B5C5DB22DB67DBC0017B597 /* ChallengeTabView.swift in Sources */,
 				3BF6AA132D9931D9008BCDE0 /* RedemptionHistoryView.swift in Sources */,
 				3B6CEE552D9C272D002E9672 /* AppDelegate.swift in Sources */,
@@ -649,7 +653,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = JjingToDo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20250429_2;
+				CURRENT_PROJECT_VERSION = 20250430;
 				DEVELOPMENT_TEAM = V83CQR357P;
 				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
@@ -675,7 +679,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-				MARKETING_VERSION = 1.6.0;
+				MARKETING_VERSION = 1.6.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fondue.JjingToDo.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -697,7 +701,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = JjingToDo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20250429_2;
+				CURRENT_PROJECT_VERSION = 20250430;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = V83CQR357P;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -724,7 +728,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-				MARKETING_VERSION = 1.6.0;
+				MARKETING_VERSION = 1.6.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Fondue.JjingToDo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;

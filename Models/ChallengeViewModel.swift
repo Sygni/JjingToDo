@@ -56,9 +56,11 @@ class ChallengeViewModel: ObservableObject {
 extension ChallengeViewModel {
     func completeChallenge(_ challenge: ChallengeEntity) {
         let now = Date()
-        let calendar = Calendar.current
+        //let calendar = Calendar.current
         
         // streak 처리
+        // 기준: 자정
+        /*
         if let lastCompletedAt = challenge.lastCompletedAt {
             let daysDiff = calendar.dateComponents([.day], from: lastCompletedAt, to: now).day ?? 0
             
@@ -71,6 +73,20 @@ extension ChallengeViewModel {
             // lastCompletedAt이 nil이면 (처음 체크)
             challenge.streakCount = 1
         }
+         */
+        
+        // 기준: 오늘 새벽 2시
+        if let last = challenge.lastCompletedAt {
+            let gap = Date().daysSinceBy2AM(from: last)
+
+            if gap == 1 {
+                challenge.streakCount += 1
+            } else if gap > 1 {
+                challenge.streakCount = 1
+            }
+        } else {
+            challenge.streakCount = 1
+        }
         
         // 수행 기록 업데이트
         // frequency는 무조건 증가 (하루에도 여러 번 누를 수 있음)
@@ -81,9 +97,19 @@ extension ChallengeViewModel {
         let safeStreak = max(0, Int(challenge.streakCount))
         let safeFrequency = max(0, Int(challenge.frequencyCount))
 
+        // Morning Challenge를 오전에 수행하면 가산점
+        var multiplier = 1
+        //let hour = Calendar.current.component(.hour, from: Date())
+
+        if challenge.isMorningChallenge && Date().isMorningBy2AM {
+            multiplier = 2
+        }
+        
         // 포인트 계산 (frequency 기준 + streak 가산)
-        let points = calculateRoutinePoint(streak: safeStreak, frequency: safeFrequency)
-        print("streak: ", safeStreak, ", frequency: ", safeFrequency, ", 추가될 포인트: ", points)
+        let points = calculateRoutinePoint(streak: safeStreak, frequency: safeFrequency) * multiplier
+        print("streak: ", safeStreak, ", frequency: ", safeFrequency)
+        print("모닝챌린지 가산 배수: ", multiplier, ", 추가될 포인트: ", points)
+        
         challenge.rewardPoint += Int32(points)
         
         // UserEntity에도 포인트 합산
@@ -94,7 +120,6 @@ extension ChallengeViewModel {
         
         // 저장
         saveContext()
-        //fetchChallenges()
         DispatchQueue.main.async {
             self.fetchChallenges()
         }

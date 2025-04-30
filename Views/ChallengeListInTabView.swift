@@ -8,74 +8,87 @@
 import SwiftUI
 
 struct ChallengeListInTabView: View {
-    //@StateObject private var viewModel = ChallengeViewModel()
     @ObservedObject var viewModel: ChallengeViewModel
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            /*
-             Text("👩‍🎓Jelina🏋️‍♀️")
-                .font(.title3)
-                .foregroundColor(Color(hex: "#79e5cb"))
-                .bold()
-                .padding(.leading, 8)
-            */
-             
+        List {
             ForEach(viewModel.challenges) { challenge in
                 ChallengeRowInTabView(challenge: challenge, completeAction: {
                     viewModel.completeChallenge(challenge)
                 })
+                //.listRowSeparator(.hidden)
+                .listRowInsets(.init(top: -2, leading: -4, bottom: -2, trailing: -4))
+                // ✅ 셀 기본 배경 직접 지정
+                .listRowBackground(
+                    RoundedRectangle(cornerRadius: 0)
+                        .fill(
+                            challenge.isMorningChallenge && Date().isMorningBy2AM
+                            ? Color.yellow.opacity(0.18)       // 파스텔 노랑
+                            : Color(.clear)
+                        )
+                )
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.systemBackground))
-                //.shadow(radius: 3)
-        )
+        .listStyle(.plain)
+        //.listRowSpacing(4)
+        .background(Color.clear)
+        .onAppear {
+            UITableViewCell.appearance().backgroundColor = .clear   // 계층 제거
+        }
     }
 }
 
 struct ChallengeRowInTabView: View {
-    var challenge: ChallengeEntity
+    @ObservedObject var challenge: ChallengeEntity
     var completeAction: () -> Void
-
+    
     var body: some View {
+        
+        let isMorning = challenge.isMorningChallenge
+        let days = daysSinceOptionalBy2AM(challenge.lastCompletedAt) ?? -1
+        
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(challenge.title ?? "Untitled")
                     .font(.headline)
-
+                
                 HStack(spacing: 10) {
                     Text("이번 주 \(max(0, challenge.frequencyCount))회")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(Color(hex: "#79e5cb"))
                     Text("연속 \(max(0, challenge.streakCount))일째")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(Color(hex: "#79e5cb"))
                 }
             }
             
             Spacer()
             
+            if isMorning {
+                Text("☀️")
+            }
+            
             //최근 마지막으로 한 날짜로부터 얼마나 경과했나 보여주기
-            if let days = daysSinceOptional(challenge.lastCompletedAt) {
-                if days == 0 {
-                    Text("—")
-                        .foregroundColor(statusColor(for: days))
-                } else {
-                    Text("+\(days)")
-                        .font(.caption)
-                        .foregroundColor(statusColor(for: days))
-                }
-            } else {
-                Text("—") // or 그냥 비워두기
+            if days == -1 {
+                Text("—")
                     .font(.subheadline)
                     .foregroundColor(.gray)
+            } else if days == 0 {       // 수행한 당일
+                Text("💎")
+                    .foregroundColor(statusColor(for: days))
+            } else {
+                Text("+\(days)")
+                    .font(.caption)
+                    .foregroundColor(statusColor(for: days))
             }
             
             // 할 때마다 누를 수 있도록 버튼은 언제나 활성화
-            Button(action: completeAction) {
+            Button(action: {
+                completeAction()
+                
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.success)
+            }) {
                 Text("🙌")
                     .font(.title)
                     .padding(.vertical, 4)
@@ -84,7 +97,36 @@ struct ChallengeRowInTabView: View {
                     .foregroundColor(.white)
                     .cornerRadius(8)
             }
-
+            
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            // 아침 모드 - 설정된 항목은 오전에 수행하면 포인트 2배
+            Button {
+                challenge.isMorningChallenge.toggle()
+                try? challenge.managedObjectContext?.save()
+                print("isMorningChallenge: ", challenge.isMorningChallenge)
+            } label: {
+                Label(
+                    challenge.isMorningChallenge ? "아침 해제" : "아침 설정",
+                    systemImage: "sunrise.fill"
+                )
+            }
+            .tint(challenge.isMorningChallenge ? .gray : .orange)
+            
+            // 🗑️ 삭제
+            Button(role: .destructive) {
+                if let context = challenge.managedObjectContext {
+                    context.delete(challenge)
+                    try? context.save()
+                }
+            } label: {
+                Label("삭제", systemImage: "trash")
+            }
+        }
+        .onAppear {
+            print("📅 days: \(days), lastCompletedAt: \(String(describing: challenge.lastCompletedAt))")
         }
     }
     
@@ -104,6 +146,13 @@ struct ChallengeRowInTabView: View {
     
     func daysSinceOptional(_ date: Date?) -> Int? {
         guard let date else { return nil }
-        return Calendar.current.dateComponents([.day], from: date, to: Date()).day
+        let diff = Calendar.current.dateComponents([.day], from: date, to: Date()).day
+        return diff ?? nil
+    }
+
+    func daysSinceOptionalBy2AM(_ date: Date?) -> Int? {
+        guard let date else { return nil }
+        return Date.adjustedNowBy2AM.daysSinceBy2AM(from: date)   // ← 반드시 adjustedNowBy2AM
     }
 }
+

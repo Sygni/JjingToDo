@@ -26,7 +26,7 @@ struct ChallengeTabView: View {
         ZStack{
             chugumiBackground.ignoresSafeArea()
             
-            ScrollView{
+            //ScrollView {
                 VStack(spacing: 8) {
                     // 🧘‍♀️ 추구미 영역 (ChugumiZone)
                     VStack() {
@@ -65,11 +65,6 @@ struct ChallengeTabView: View {
                         }
                     }
                     .padding()
-                    /* 안 이쁨
-                     .background(
-                     RoundedRectangle(cornerRadius: 16)
-                     .fill(Color.white.opacity(0.6))
-                     )*/
                     
                     // 포인트 애니메이션
                     if showPoint {
@@ -101,21 +96,13 @@ struct ChallengeTabView: View {
                     // ✨ 루틴 챌린지 영역 (ChallengeZone)
                     VStack(spacing: 8) {
                         HStack {
-                            Text("👩‍🎓Jelina🏋️‍♀️")
+                            Text("🔥꾸준함이 재능을 이긴다💪")
                                 .font(.title3)
+                                .foregroundColor(.yellow)
                                 .bold()
                             
                             Spacer()
                            
-                            /*
-                            Button(action: {
-                                challengeViewModel.addChallenge(title: "새 챌린지 \(Date().formatted())")
-                            }) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.title2)
-                                    //.foregroundColor(Color(hex: "#79e5cb"))
-                            }
-                             */
                             Button(action: {
                                 showAddChallenge = true
                             }) {
@@ -140,6 +127,7 @@ struct ChallengeTabView: View {
                         .padding(.horizontal, 8)
                         
                         ChallengeListInTabView(viewModel: challengeViewModel)
+                            .frame(maxHeight: .infinity)   // 남은 공간 차지
                     }
                     .padding()
                     .background(
@@ -149,10 +137,10 @@ struct ChallengeTabView: View {
                     )
                     
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 16)
                 
-                Spacer(minLength: 20)
-            }
+                Spacer(minLength: 0)
+            //}
             .frame(maxWidth: .infinity, alignment: .top)
         }
         .alert("추구미 기록", isPresented: $showMemoAlert) {

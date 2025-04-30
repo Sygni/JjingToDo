@@ -5,6 +5,7 @@
         <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="frequencyCount" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isMorningChallenge" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="lastCompletedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="rewardPoint" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="streakCount" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
