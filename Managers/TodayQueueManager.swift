@@ -57,6 +57,7 @@ final class TodayQueueManager {
         
         let op = BlockOperation {
             self.resetExpiredTodayTasks()
+            self.resetStreaksIfExpired()    // 20250519 챌린지 streak 리셋
         }
         task.expirationHandler = { queue.cancelAllOperations() }
         op.completionBlock = { task.setTaskCompleted(success: !op.isCancelled) }
@@ -95,6 +96,43 @@ final class TodayQueueManager {
         if target <= now { target = cal.date(byAdding: .day, value: 1, to: target)! }
         return target
     }
+    
+    /// 아래 부분은 나중에 필요에 따라 분리할 것
+    /// resetStreaksIfExpired
+    /// fetchAllChallenges
+    // 20250519 챌린지 streak 리셋용
+    // MARK: - Streak Reset (챌린지 연속 실패 감지)
+    private func resetStreaksIfExpired() {
+        let context = PersistenceController.shared.container.viewContext
+        let challenges = fetchAllChallenges()
+
+        for challenge in challenges {
+            if let last = challenge.lastCompletedAt {
+                let gap = Date.adjustedNowBy2AM.daysSinceBy2AM(from: last)
+                if gap >= 2 {
+                    challenge.streakCount = 0
+                    print("🔁 streak 리셋: \(challenge.title ?? "무제") gap = \(gap)")
+                }
+            }
+        }
+
+        do {
+            try context.save()
+        } catch {
+            print("⚠️ streak 리셋 저장 실패: \(error)")
+        }
+    }
+
+    private func fetchAllChallenges() -> [ChallengeEntity] {
+        let request: NSFetchRequest<ChallengeEntity> = ChallengeEntity.fetchRequest()
+        request.sortDescriptors = []
+        do {
+            return try PersistenceController.shared.container.viewContext.fetch(request)
+        } catch {
+            print("⚠️ 챌린지 가져오기 실패: \(error)")
+            return []
+        }
+    }
 }
 
 // MARK: - TaskEntity helper (put in TaskEntity+Today.swift)
@@ -106,3 +144,6 @@ extension TaskEntity {
         return calendar.date(byAdding: DateComponents(day: 1, hour: 2), to: start)
     }
 }
+
+
+

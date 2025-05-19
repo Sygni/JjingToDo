@@ -59,6 +59,9 @@ struct ChallengeRowInTabView: View {
                     Text("연속 \(max(0, challenge.streakCount))일째")
                         .font(.caption)
                         .foregroundColor(Color(hex: "#79e5cb"))
+                    Text("+\(max(0, challenge.rewardPoint))점")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#79e5cb"))
                 }
             }
             

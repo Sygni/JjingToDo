@@ -113,9 +113,33 @@ struct CSVManager {
             
             for row in rows.dropFirst() {
                 let values = parseCSVLine(row)
-                let object = T(context: context)
                 let attributes = T.entity().attributesByName
      
+                //let object = T(context: context)
+                // 20250519 .csv에서 복원할 때 항목 덮어쓰기 되지 않고 추가되는 이슈 수정
+                // 1. UUID 먼저 찾아서 중복 여부 판단
+                var object: T? = nil
+
+                if let idIndex = keys.firstIndex(of: "id"),
+                   let uuid = UUID(uuidString: values[idIndex]) {
+                   let fetchRequest = NSFetchRequest<T>(entityName: T.entity().name!)
+                   fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
+                   if let existing = try? context.fetch(fetchRequest).first {
+                        object = existing // ✅ 기존 객체 재사용
+                   } else {
+                        object = T(context: context) // ✅ 새로 생성
+                        object?.setValue(uuid, forKey: "id")
+                   }
+                } else {
+                    //object = T(context: context) // ❗️id가 아예 없을 때 → 새로 생성
+                    // ❌ 유효한 UUID 없으면 import 중단 (덮어쓰기 불가)
+                    print("❌ UUID 누락 또는 파싱 실패 → 해당 row 건너뜀")
+                    continue
+                }
+
+                guard let finalObject = object else { continue }
+                                
+                // 2. 나머지 필드 매핑
                 for (index, key) in keys.enumerated() where index < values.count {
                     
                     // 20250402 csv 로드 중 파싱 에러로 수정
@@ -136,7 +160,7 @@ struct CSVManager {
                     
                     switch attribute.attributeType {
                     case .UUIDAttributeType:
-                        object.setValue(UUID(uuidString: value), forKey: cleanedKey)
+                        finalObject.setValue(UUID(uuidString: value), forKey: cleanedKey)
 
                     case .dateAttributeType:
                         // 20250402 파싱 에러로 수정
@@ -145,24 +169,24 @@ struct CSVManager {
                         fallbackFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
 
                         if let date = isoFormatter.date(from: value) ?? fallbackFormatter.date(from: value) {
-                            object.setValue(date, forKey: cleanedKey)
+                            finalObject.setValue(date, forKey: cleanedKey)
                         } else if cleanedKey == "createdAt" {
                             print("❌ createdAt 파싱 실패 → 이 객체는 저장 안 됨: \(value)")
-                            context.delete(object)
+                            context.delete(finalObject)
                             continue
                         } else {
                             print("⚠️ 잘못된 날짜: \(value) → \(cleanedKey) 무시됨")
                         }
                     case .integer16AttributeType:
-                        object.setValue(Int16(value) ?? 0, forKey: cleanedKey)
+                        finalObject.setValue(Int16(value) ?? 0, forKey: cleanedKey)
                     case .integer32AttributeType:
-                        object.setValue(Int32(value) ?? 0, forKey: cleanedKey)
+                        finalObject.setValue(Int32(value) ?? 0, forKey: cleanedKey)
                     case .integer64AttributeType:
-                        object.setValue(Int64(value) ?? 0, forKey: cleanedKey)
+                        finalObject.setValue(Int64(value) ?? 0, forKey: cleanedKey)
                     case .booleanAttributeType:
-                        object.setValue(value == "1" || value.lowercased() == "true", forKey: cleanedKey)
+                        finalObject.setValue(value == "1" || value.lowercased() == "true", forKey: cleanedKey)
                     case .stringAttributeType:
-                        object.setValue(value, forKey: cleanedKey)
+                        finalObject.setValue(value, forKey: cleanedKey)
                     default:
                         print("⚠️ 처리되지 않은 타입: \(attribute.attributeType) (\(cleanedKey))")
                     }
@@ -197,6 +221,9 @@ struct CSVManager {
                     print("📥 유저 복원 시작: \(filename)")
                     //importCSV(url: url, into: UserEntity.self, context: context)
                     importUserFromCSV(url: url, context: context)
+                } else if filename.contains("challenge") {
+                    print("📥 챌린지 복원 시작: \(filename)")
+                    importCSV(url: url, into: ChallengeEntity.self, context: context)
                 } else {
                     print("⚠️ 인식할 수 없는 파일: \(filename) → 스킵됨")
                 }

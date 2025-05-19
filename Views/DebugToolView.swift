@@ -100,7 +100,9 @@ struct DebugToolView: View {
                             guard let entityType = importEntityType else {
                                 print("📦 entityType이 nil → 전체 CSV 불러오기 수행")
                                 CSVManager.importAllCSVFromDocuments(urls: selectedFiles, context: viewContext)
-                                refreshTrigger = UUID()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    refreshTrigger = UUID()   // ✅ 살짝 딜레이로 리스트 안전하게 갱신
+                                }
                                 return
                             }
                             
