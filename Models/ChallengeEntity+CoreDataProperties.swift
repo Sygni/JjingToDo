@@ -26,6 +26,8 @@ extension ChallengeEntity {
     @NSManaged public var rewardPoint: Int32
     @NSManaged public var frequencyCount: Int32
     @NSManaged public var isMorningChallenge: Bool // 기본값 false
+    @NSManaged public var weeklyCount: Int32
+    @NSManaged public var weekStartDate: Date?
 
 }
 

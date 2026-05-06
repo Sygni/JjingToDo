@@ -53,7 +53,7 @@ struct ChallengeRowInTabView: View {
                     .font(.headline)
                 
                 HStack(spacing: 10) {
-                    Text("이번 주 \(max(0, challenge.frequencyCount))회")
+                    Text("이번 주 \(max(0, challenge.weeklyCount))회")
                         .font(.caption)
                         .foregroundColor(Color(hex: "#79e5cb"))
                     Text("연속 \(max(0, challenge.streakCount))일째")

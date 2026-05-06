@@ -11,6 +11,7 @@ import CoreData
 struct AddRewardView: View {
     @Environment(\.managedObjectContext) var viewContext
     @Binding var showingSheet: Bool
+    var nextSortOrder: Int32 = 0
 
     @State private var title = ""
     @State private var type: String = ""
@@ -88,6 +89,7 @@ struct AddRewardView: View {
         reward.remainingCount = max(0, count)
         reward.createdAt = Date()
         reward.rewardType = "기타"
+        reward.sortOrder = nextSortOrder
 
         do {
             try viewContext.save()

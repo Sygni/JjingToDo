@@ -81,10 +81,17 @@ extension ChallengeViewModel {
         }
         
         // 수행 기록 업데이트
-        // frequency는 무조건 증가 (하루에도 여러 번 누를 수 있음)
         challenge.totalCount += 1
         challenge.frequencyCount += 1
         challenge.lastCompletedAt = now
+
+        // 주간 카운트: 이번 주가 바뀌었으면 리셋 후 1, 아니면 +1
+        if isNewWeek(since: challenge.weekStartDate) {
+            challenge.weeklyCount = 1
+            challenge.weekStartDate = currentWeekStart()
+        } else {
+            challenge.weeklyCount += 1
+        }
         
         let safeStreak = max(0, Int(challenge.streakCount))
         let safeFrequency = max(0, Int(challenge.frequencyCount))
@@ -126,6 +133,25 @@ extension ChallengeViewModel {
             print("⚠️ 사용자 가져오기 실패: \(error)")
             return nil
         }
+    }
+}
+
+extension ChallengeViewModel {
+    func currentWeekStart() -> Date {
+        var cal = Calendar.current
+        cal.firstWeekday = 2  // 월요일 시작
+        return cal.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+    }
+
+    func isNewWeek(since date: Date?) -> Bool {
+        guard let date = date else { return true }
+        var cal = Calendar.current
+        cal.firstWeekday = 2
+        let thisWeek = cal.component(.weekOfYear, from: Date())
+        let thisYear = cal.component(.year, from: Date())
+        let thatWeek = cal.component(.weekOfYear, from: date)
+        let thatYear = cal.component(.year, from: date)
+        return thisWeek != thatWeek || thisYear != thatYear
     }
 }
 

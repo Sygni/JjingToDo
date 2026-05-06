@@ -32,14 +32,22 @@ struct MainTodoView: View {
     //Edit
     @State private var taskToEdit: TaskEntity? = nil
     @State private var editedTitle: String = ""
-    @State private var showEditAlert = false
+    @State private var editedDueDate: Date? = nil
+    @State private var showEditSheet = false
+    @State private var showEditDueDatePicker = false
     
     // 20250420 오늘의할일 기능 추가
     @State /*private*/ var showTodayLimitAlert = false
     @State /*private*/ var todayLimitMessage = ""
+    @State /*private*/ var listRefreshToken: Int = 0  // @FetchRequest가 속성 변경을 놓칠 때 강제 갱신용
     
     // 20250423 투두리스트에 타입 필터 추가
-    @State /*private*/ var selectedFilterType: TaskType? = nil  // 전체(default nil), 개인/업무/공부 등
+    @State /*private*/ var selectedFilterType: TaskType? = nil  // 전체(default nil), 개인/공부
+    @State /*private*/ var questSortOrder: QuestSortOrder = .createdDesc
+
+    // Due date
+    @State private var showDueDatePicker: Bool = false
+    @State private var newTaskDueDate: Date? = nil
     
     let taskKey = "savedTasks"
     let pointKey = "savedPoints"
@@ -83,7 +91,8 @@ struct MainTodoView: View {
     }
     
     var body: some View {
-        ZStack {
+        let _ = listRefreshToken  // SwiftUI 의존성 추적 강제 등록
+        return ZStack {
             VStack {
                 // 여기에 할 일 리스트나 다른 UI 추가
                 VStack(spacing: 16) {
@@ -101,7 +110,8 @@ struct MainTodoView: View {
                                         task,
                                         taskToEdit: $taskToEdit,
                                         editedTitle: $editedTitle,
-                                        showEditAlert: $showEditAlert,
+                                        editedDueDate: $editedDueDate,
+                                        showEditSheet: $showEditSheet,
                                         taskToDelete: $taskToDelete,
                                         showDeleteAlert: $showDeleteAlert
                                     )
@@ -141,14 +151,29 @@ struct MainTodoView: View {
                                             .fontWeight(.bold)
                                     }
                                     
-                                    // 20250423 투두리스트에 타입 필터 추가
-                                    Picker("필터", selection: $selectedFilterType) {
-                                        Text("전체").tag(nil as TaskType?)
-                                        ForEach(TaskType.allCases, id: \.self) { type in
-                                            Text(type.label).tag(type as TaskType?)
+                                    HStack(spacing: 6) {
+                                        Picker("필터", selection: $selectedFilterType) {
+                                            Text("전체").tag(nil as TaskType?)
+                                            ForEach(TaskType.allCases.filter { $0 != .work }, id: \.self) { type in
+                                                Text(type.label).tag(type as TaskType?)
+                                            }
+                                        }
+                                        .pickerStyle(SegmentedPickerStyle())
+
+                                        Menu {
+                                            ForEach(QuestSortOrder.allCases, id: \.self) { order in
+                                                Button {
+                                                    questSortOrder = order
+                                                } label: {
+                                                    Label(order.label, systemImage: questSortOrder == order ? "checkmark" : order.icon)
+                                                }
+                                            }
+                                        } label: {
+                                            Image(systemName: "arrow.up.arrow.down")
+                                                .foregroundColor(.secondary)
+                                                .frame(width: 28, height: 28)
                                         }
                                     }
-                                    .pickerStyle(SegmentedPickerStyle())
                                     //.padding(.bottom, 8)
                                     Divider()
                                         .frame(maxWidth: .infinity)
@@ -165,7 +190,8 @@ struct MainTodoView: View {
                                     task,
                                     taskToEdit: $taskToEdit,
                                     editedTitle: $editedTitle,
-                                    showEditAlert: $showEditAlert,
+                                    editedDueDate: $editedDueDate,
+                                    showEditSheet: $showEditSheet,
                                     taskToDelete: $taskToDelete,
                                     showDeleteAlert: $showDeleteAlert
                                 )
@@ -190,18 +216,9 @@ struct MainTodoView: View {
                     //Text("\"\(task.title)\"를 삭제하면 복구할 수 없습니다.")
                     Text("항목을 삭제하면 복구할 수 없습니다.")
                 }
-                .alert("할 일 수정", isPresented: $showEditAlert, actions: {
-                    TextField("제목", text: $editedTitle)
-                    Button("저장", role: .none) {
-                        if let taskToEdit = taskToEdit {
-                            taskToEdit.title = editedTitle
-                            saveContext()
-                        }
-                    }
-                    Button("취소", role: .cancel) { }
-                }, message: {
-                    Text("할 일 제목을 수정하세요")
-                })
+                .sheet(isPresented: $showEditSheet) {
+                    editSheet
+                }
                 .padding()
 
                 Spacer()
@@ -233,12 +250,19 @@ struct MainTodoView: View {
     }
 
     private func inputSection(newTask: Binding<String>, viewContext: NSManagedObjectContext, selectedRewardLevel: RewardLevel, saveContext: @escaping () -> Void) ->  some View {
-        VStack {
+        VStack(spacing: 8) {
             HStack {
                 TextField("할 일을 입력하세요", text: newTask)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .submitLabel(.done)
-                
+
+                Button {
+                    withAnimation { showDueDatePicker.toggle() }
+                } label: {
+                    Image(systemName: newTaskDueDate != nil ? "calendar.badge.checkmark" : "calendar")
+                        .foregroundColor(newTaskDueDate != nil ? .accentColor : .secondary)
+                }
+
                 Button("추가") {
                     if !newTask.wrappedValue.isEmpty {
                         let task = TaskEntity(context: viewContext)
@@ -248,8 +272,11 @@ struct MainTodoView: View {
                         task.createdAt = Date()
                         task.rewardLevelRaw = Int16(selectedRewardLevel.rawValue)
                         task.taskType = selectedTaskType
+                        task.dueDate = newTaskDueDate
 
                         newTask.wrappedValue = ""
+                        newTaskDueDate = nil
+                        showDueDatePicker = false
                         saveContext()
                     }
                 }
@@ -259,17 +286,31 @@ struct MainTodoView: View {
                 .foregroundColor(.white)
                 .cornerRadius(8)
             }
-            
+
+            if showDueDatePicker {
+                DatePicker(
+                    "",
+                    selection: Binding(
+                        get: { newTaskDueDate ?? Date() },
+                        set: { newTaskDueDate = $0 }
+                    ),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
             HStack {
                 Picker("타입", selection: $selectedTaskType) {
-                    ForEach(TaskType.allCases, id: \.self) { type in
+                    ForEach(TaskType.allCases.filter { $0 != .work }, id: \.self) { type in
                         Label(type.label, systemImage: type.icon)
                             .tag(type)
                     }
                 }
-                .frame(width: 150, height: 30)
+                .frame(width: 120, height: 30)
                 .pickerStyle(SegmentedPickerStyle())
-                
+
                 Picker("난이도", selection: $selectedRewardLevel) {
                     Text(RewardLevel.easy.label)
                         .tag(RewardLevel.easy)
@@ -300,13 +341,82 @@ struct MainTodoView: View {
         .pickerStyle(SegmentedPickerStyle())
     }
     
-    // 20250420 오늘의할일 기능 추가
+    private func dueDateColor(_ date: Date, isCompleted: Bool) -> Color {
+        if isCompleted { return .secondary }
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let dueDay = cal.startOfDay(for: date)
+        let days = cal.dateComponents([.day], from: today, to: dueDay).day ?? 0
+        if days <= 0 { return .red }
+        if days <= 2 { return .yellow }
+        return .secondary
+    }
+
+    private func dueDateDisplay(_ date: Date) -> String {
+        let cal = Calendar.current
+        let symbols = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
+        let weekday = cal.component(.weekday, from: date) - 1
+        let month = cal.component(.month, from: date)
+        let day = cal.component(.day, from: date)
+        return "\(month)/\(day)(\(symbols[weekday]))"
+    }
+
+    // MARK: - Edit Sheet
+    @ViewBuilder
+    private var editSheet: some View {
+        NavigationView {
+            Form {
+                Section("제목") {
+                    TextField("할 일", text: $editedTitle)
+                }
+                Section("마감일") {
+                    if editedDueDate != nil {
+                        DatePicker(
+                            "날짜",
+                            selection: Binding(
+                                get: { editedDueDate ?? Date() },
+                                set: { editedDueDate = $0 }
+                            ),
+                            displayedComponents: .date
+                        )
+                        Button("날짜 삭제", role: .destructive) {
+                            editedDueDate = nil
+                        }
+                    } else {
+                        Button("날짜 추가") {
+                            editedDueDate = Date()
+                        }
+                    }
+                }
+            }
+            .navigationTitle("할 일 수정")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("취소") { showEditSheet = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("저장") {
+                        if let task = taskToEdit {
+                            task.title = editedTitle
+                            task.dueDate = editedDueDate
+                            saveContext()
+                        }
+                        showEditSheet = false
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
     // MARK: - 공통 셀 UI (Today·Normal 공유)
     private func taskRow(
         _ task: TaskEntity,
         taskToEdit: Binding<TaskEntity?>,
         editedTitle: Binding<String>,
-        showEditAlert: Binding<Bool>,
+        editedDueDate: Binding<Date?>,
+        showEditSheet: Binding<Bool>,
         taskToDelete: Binding<TaskEntity?>,
         showDeleteAlert: Binding<Bool>
     ) -> some View {
@@ -330,6 +440,15 @@ struct MainTodoView: View {
                     .strikethrough(task.isCompleted)
                     .foregroundColor(task.isCompleted ? .gray : task.reward.color)
                 Spacer()
+                if task.isToday && task.isAutoAssigned {
+                    Text("🎲")
+                        .font(.caption)
+                }
+                if let due = task.dueDate {
+                    Text(dueDateDisplay(due))
+                        .font(.caption)
+                        .foregroundColor(dueDateColor(due, isCompleted: task.isCompleted))
+                }
             }
         }
         .contentShape(Rectangle()) // ⬅️ 이거 매우 중요! 전체 행을 터치 영역으로 지정
@@ -344,7 +463,8 @@ struct MainTodoView: View {
              Button {
                  taskToEdit.wrappedValue = task
                  editedTitle.wrappedValue = task.safeTitle
-                 showEditAlert.wrappedValue = true
+                 editedDueDate.wrappedValue = task.dueDate
+                 showEditSheet.wrappedValue = true
              } label: {
                  Label("수정", systemImage: "pencil")
              }
@@ -374,13 +494,13 @@ struct MainTodoView: View {
            
             // ── 완료 시 ────────────────────────────────
             var multiplier = 1
-            // ▸ 오늘 큐 + 만료 이전 + 아직 보너스 미지급 → 2배
+            // ▸ 오늘 큐 + 만료 이전 + 아직 보너스 미지급 → 자동배정 3배, 수동 2배
             if task.isToday,
                let exp = task.todayExpires,
                Date() < exp,
                task.bonusGranted == false {
-                multiplier = 2
-                task.bonusGranted = true   // 중복 지급 방지
+                multiplier = task.isAutoAssigned ? 3 : 2
+                task.bonusGranted = true
             }
 
             earned = basePoint * multiplier
@@ -395,7 +515,8 @@ struct MainTodoView: View {
         } else {
 
             // ── 체크 해제(완료 취소) ────────────────────
-            earned = basePoint * (task.bonusGranted ? 2 : 1)
+            let bonusMultiplier = task.bonusGranted ? (task.isAutoAssigned ? 3 : 2) : 1
+            earned = basePoint * bonusMultiplier
             task.bonusGranted = false
 
             let newPointTotal = max(Int(user.points) - earned, 0)

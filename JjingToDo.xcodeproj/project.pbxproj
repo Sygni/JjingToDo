@@ -42,6 +42,8 @@
 		3BF6AA122D9931D9008BCDE0 /* DataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 3BF6A9F22D9931D9008BCDE0 /* DataModel.xcdatamodeld */; };
 		3BF6AA132D9931D9008BCDE0 /* RedemptionHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF6A9E02D9931D9008BCDE0 /* RedemptionHistoryView.swift */; };
 		3BF6AA152D9931D9008BCDE0 /* RedemptionEntity+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF6A9DD2D9931D9008BCDE0 /* RedemptionEntity+CoreDataClass.swift */; };
+		AA00CC112D9931D9008BCDE0 /* RewardEntity+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00CC102D9931D9008BCDE0 /* RewardEntity+CoreDataClass.swift */; };
+		AA00CC122D9931D9008BCDE0 /* RewardEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00CC132D9931D9008BCDE0 /* RewardEntity+CoreDataProperties.swift */; };
 		3BF6AA162D9931D9008BCDE0 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF6A9FB2D9931D9008BCDE0 /* ContentView.swift */; };
 		3BF6AA172D9931D9008BCDE0 /* WORKLOG.md in Resources */ = {isa = PBXBuildFile; fileRef = 3BF6AA002D9931D9008BCDE0 /* WORKLOG.md */; };
 		3BF6AA182D9931D9008BCDE0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3BF6A9F12D9931D9008BCDE0 /* Assets.xcassets */; };
@@ -49,6 +51,7 @@
 		3BF6AA1A2D9931D9008BCDE0 /* appstore.png in Resources */ = {isa = PBXBuildFile; fileRef = 3BF6A9D92D9931D9008BCDE0 /* appstore.png */; };
 		3BF6AA1B2D9931D9008BCDE0 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3BF6A9EC2D9931D9008BCDE0 /* Preview Assets.xcassets */; };
 		3BF6AA202D993638008BCDE0 /* Preview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF6AA1F2D993634008BCDE0 /* Preview.swift */; };
+		AA00BB122D9931D9008BCDE0 /* PointGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00BB112D9931D9008BCDE0 /* PointGuideView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -85,6 +88,8 @@
 		3B5C5DB12DB67DBB0017B597 /* ChallengeTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeTabView.swift; sourceTree = "<group>"; };
 		3B5C5DB32DB686B10017B597 /* ChugumiBunnyButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChugumiBunnyButton.swift; sourceTree = "<group>"; };
 		3B5C5DB52DC10F9E0017B597 /* ChallengeEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChallengeEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
+		AA00CC102D9931D9008BCDE0 /* RewardEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RewardEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
+		AA00CC132D9931D9008BCDE0 /* RewardEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RewardEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		3B5C5DB62DC10F9E0017B597 /* ChallengeEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChallengeEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		3B5C5DB92DC110FB0017B597 /* ChallengeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeViewModel.swift; sourceTree = "<group>"; };
 		3B5C5DBB2DC113DA0017B597 /* ChallengeListInTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeListInTabView.swift; sourceTree = "<group>"; };
@@ -125,6 +130,7 @@
 		3BF6AA012D9931D9008BCDE0 /* DataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = DataModel.xcdatamodel; sourceTree = "<group>"; };
 		3BF6AA1E2D9933FB008BCDE0 /* JjingToDo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JjingToDo.entitlements; sourceTree = "<group>"; };
 		3BF6AA1F2D993634008BCDE0 /* Preview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preview.swift; sourceTree = "<group>"; };
+		AA00BB112D9931D9008BCDE0 /* PointGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointGuideView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -258,6 +264,8 @@
 				3B5C5DAE2DB67C540017B597 /* ChugumiActionEntity+CoreDataProperties.swift */,
 				3BD27DEE2DB52A730077BE02 /* TaskEntity+CoreDataProperties.swift */,
 				3B5C5DB92DC110FB0017B597 /* ChallengeViewModel.swift */,
+				AA00CC102D9931D9008BCDE0 /* RewardEntity+CoreDataClass.swift */,
+				AA00CC132D9931D9008BCDE0 /* RewardEntity+CoreDataProperties.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -284,10 +292,10 @@
 			children = (
 				3BF6A9F02D9931D9008BCDE0 /* Config */,
 				3BF6A9F12D9931D9008BCDE0 /* Assets.xcassets */,
-				3BF6A9F22D9931D9008BCDE0 /* DataModel.xcdatamodeld */,
 				3BF6A9D92D9931D9008BCDE0 /* appstore.png */,
 				3BF6A9DB2D9931D9008BCDE0 /* playstore.png */,
 				3BD27DEC2DB529770077BE02 /* MappingModel.xcmappingmodel */,
+				3BF6A9F22D9931D9008BCDE0 /* DataModel.xcdatamodeld */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -308,6 +316,7 @@
 				3B5C5DB12DB67DBB0017B597 /* ChallengeTabView.swift */,
 				3BD27DF02DB52B160077BE02 /* MainTodoView+Today.swift */,
 				3BF6A9FA2D9931D9008BCDE0 /* AddRewardView.swift */,
+				AA00BB112D9931D9008BCDE0 /* PointGuideView.swift */,
 				3BF6A9FB2D9931D9008BCDE0 /* ContentView.swift */,
 				3BF6A9FC2D9931D9008BCDE0 /* DebugToolView.swift */,
 				3BF6A9FD2D9931D9008BCDE0 /* MainTodoView.swift */,
@@ -446,6 +455,8 @@
 				3B5C5DB42DB686B30017B597 /* ChugumiBunnyButton.swift in Sources */,
 				3BD27DEF2DB52A730077BE02 /* TaskEntity+CoreDataProperties.swift in Sources */,
 				3BF6AA032D9931D9008BCDE0 /* Model.swift in Sources */,
+				AA00CC112D9931D9008BCDE0 /* RewardEntity+CoreDataClass.swift in Sources */,
+				AA00CC122D9931D9008BCDE0 /* RewardEntity+CoreDataProperties.swift in Sources */,
 				3B3E70DE2D9C05E900A18A90 /* CSVManager.swift in Sources */,
 				3BF6AA202D993638008BCDE0 /* Preview.swift in Sources */,
 				3BF6AA042D9931D9008BCDE0 /* JjingToDoApp.swift in Sources */,
@@ -463,6 +474,7 @@
 				3BF6AA092D9931D9008BCDE0 /* DebugToolView.swift in Sources */,
 				3BF6AA0A2D9931D9008BCDE0 /* TaskEntity+CoreDataClass.swift in Sources */,
 				3BF6AA0B2D9931D9008BCDE0 /* AddRewardView.swift in Sources */,
+				AA00BB122D9931D9008BCDE0 /* PointGuideView.swift in Sources */,
 				3B5C5DBE2DC12AF70017B597 /* AddChallengeView.swift in Sources */,
 				3BF6AA0E2D9931D9008BCDE0 /* MainTodoView.swift in Sources */,
 				3BD27DF12DB52B180077BE02 /* MainTodoView+Today.swift in Sources */,
@@ -653,7 +665,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = JjingToDo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20250519_1;
+				CURRENT_PROJECT_VERSION = 20260506_1;
 				DEVELOPMENT_TEAM = V83CQR357P;
 				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
@@ -679,7 +691,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-				MARKETING_VERSION = 1.6.2;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fondue.JjingToDo.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -701,7 +713,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = JjingToDo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20250519_1;
+				CURRENT_PROJECT_VERSION = 20260506_1;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = V83CQR357P;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -728,7 +740,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-				MARKETING_VERSION = 1.6.2;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Fondue.JjingToDo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;

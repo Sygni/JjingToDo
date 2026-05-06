@@ -44,7 +44,7 @@ struct ContentView: View {
 #if DEBUG
                 DebugToolView(refreshTrigger: $refreshToken)
                     .tabItem {
-                        Label("디버그", systemImage: "wrench.and.screwdriver")
+                        Label("설정", systemImage: "wrench.and.screwdriver")
                     }
                     .id(refreshToken)
 #endif

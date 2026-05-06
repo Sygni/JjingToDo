@@ -24,7 +24,7 @@ struct ChallengeTabView: View {
     
     var body: some View {
         ZStack{
-            chugumiBackground.ignoresSafeArea()
+            // chugumiBackground.ignoresSafeArea()  // 민트 배경 제거
             
             //ScrollView {
                 VStack(spacing: 8) {

@@ -73,13 +73,19 @@ struct DebugToolView: View {
                     }
                 }
 
+                Section(header: Text("📖 가이드")) {
+                    NavigationLink(destination: PointGuideView()) {
+                        Label("포인트 가이드", systemImage: "star.circle")
+                    }
+                }
+
                 Section {
                     Text(versionString)
                         .font(.footnote)
                         .foregroundColor(.gray)
                 }
             }
-            .navigationTitle("디버그 툴")
+            .navigationTitle("설정")
             .fileImporter(
                 isPresented: $showImportPicker,
                 allowedContentTypes: [UTType.text, UTType.commaSeparatedText],

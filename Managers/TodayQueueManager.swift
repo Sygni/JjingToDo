@@ -58,6 +58,7 @@ final class TodayQueueManager {
         let op = BlockOperation {
             self.resetExpiredTodayTasks()
             self.resetStreaksIfExpired()    // 20250519 챌린지 streak 리셋
+            self.assignRandomTodayTask()   // 랜덤 Today's Mission 자동 배정
         }
         task.expirationHandler = { queue.cancelAllOperations() }
         op.completionBlock = { task.setTaskCompleted(success: !op.isCancelled) }
@@ -74,7 +75,8 @@ final class TodayQueueManager {
             for task in results {
                 if let expires = task.todayExpires, now >= expires {
                     task.isToday = false
-                    task.bonusGranted = false   // reset bonus flag for reuse later
+                    task.bonusGranted = false
+                    task.isAutoAssigned = false
                     task.todayAssignedAt = nil
                 }
             }
@@ -121,6 +123,21 @@ final class TodayQueueManager {
         } catch {
             print("⚠️ streak 리셋 저장 실패: \(error)")
         }
+    }
+
+    // MARK: - Random Today's Mission 자동 배정 (2AM 리셋 시에만 호출)
+    private func assignRandomTodayTask() {
+        let context = PersistenceController.shared.container.viewContext
+        let fetch: NSFetchRequest<TaskEntity> = TaskEntity.fetchRequest()
+        fetch.predicate = NSPredicate(format: "isCompleted == NO AND isToday == NO")
+
+        guard let tasks = try? context.fetch(fetch), let picked = tasks.randomElement() else { return }
+
+        picked.isToday = true
+        picked.isAutoAssigned = true
+        picked.todayAssignedAt = Date()
+        try? context.save()
+        print("🎲 랜덤 Today's Mission 배정: \(picked.title ?? "무제")")
     }
 
     private func fetchAllChallenges() -> [ChallengeEntity] {

@@ -27,6 +27,8 @@ extension TaskEntity {
     @NSManaged public var isToday: Bool
     @NSManaged public var todayAssignedAt: Date?
     @NSManaged public var bonusGranted: Bool
+    @NSManaged public var isAutoAssigned: Bool
+    @NSManaged public var dueDate: Date?
 
 }
 

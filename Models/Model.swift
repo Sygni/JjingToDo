@@ -101,5 +101,27 @@ enum TaskType: Int, Codable, CaseIterable {
         case .work: return .gray
         }
     }
-    
+
+}
+
+enum QuestSortOrder: CaseIterable {
+    case createdDesc
+    case dueDate
+    case difficulty
+
+    var label: String {
+        switch self {
+        case .createdDesc: return "추가순"
+        case .dueDate:     return "마감일순"
+        case .difficulty:  return "난이도순"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .createdDesc: return "clock"
+        case .dueDate:     return "calendar"
+        case .difficulty:  return "flame"
+        }
+    }
 }
