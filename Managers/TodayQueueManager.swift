@@ -58,7 +58,7 @@ final class TodayQueueManager {
         let op = BlockOperation {
             self.resetExpiredTodayTasks()
             self.resetStreaksIfExpired()    // 20250519 챌린지 streak 리셋
-            self.assignRandomTodayTask()   // 랜덤 Today's Mission 자동 배정
+            self.assignRandomTodayTaskIfNeeded()   // 랜덤 Today's Mission 자동 배정
         }
         task.expirationHandler = { queue.cancelAllOperations() }
         op.completionBlock = { task.setTaskCompleted(success: !op.isCancelled) }
@@ -125,19 +125,45 @@ final class TodayQueueManager {
         }
     }
 
-    // MARK: - Random Today's Mission 자동 배정 (2AM 리셋 시에만 호출)
-    private func assignRandomTodayTask() {
+    // MARK: - Random Today's Mission 자동 배정
+    /// BGTask + 포그라운드 진입 양쪽에서 안전하게 호출 가능
+    /// - 이미 오늘 자동배정 항목이 있으면 스킵 (중복 방지)
+    /// - 02:00 이전이면 스킵
+    func assignRandomTodayTaskIfNeeded() {
         let context = PersistenceController.shared.container.viewContext
+        let cal = Calendar.current
+        let now = Date()
+
+        // 02:00 이전이면 스킵
+        let today2AM = cal.date(byAdding: .hour, value: 2, to: cal.startOfDay(for: now))!
+        guard now >= today2AM else {
+            print("🎲 배정 스킵: 02:00 이전")
+            return
+        }
+
+        // 이미 오늘 자동배정된 항목이 있으면 스킵
+        let checkFetch: NSFetchRequest<TaskEntity> = TaskEntity.fetchRequest()
+        checkFetch.predicate = NSPredicate(format: "isAutoAssigned == YES AND isToday == YES")
+        if let existing = try? context.fetch(checkFetch), !existing.isEmpty {
+            print("🎲 배정 스킵: 이미 배정된 항목 있음")
+            return
+        }
+
         let fetch: NSFetchRequest<TaskEntity> = TaskEntity.fetchRequest()
         fetch.predicate = NSPredicate(format: "isCompleted == NO AND isToday == NO")
-
         guard let tasks = try? context.fetch(fetch), let picked = tasks.randomElement() else { return }
 
         picked.isToday = true
         picked.isAutoAssigned = true
-        picked.todayAssignedAt = Date()
+        picked.todayAssignedAt = now
         try? context.save()
         print("🎲 랜덤 Today's Mission 배정: \(picked.title ?? "무제")")
+    }
+
+    /// 앱 포그라운드 진입 시 호출 — 만료 정리 후 미배정이면 랜덤 배정
+    func performForegroundCheck() {
+        resetExpiredTodayTasks()
+        assignRandomTodayTaskIfNeeded()
     }
 
     private func fetchAllChallenges() -> [ChallengeEntity] {

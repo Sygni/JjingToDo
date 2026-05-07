@@ -50,10 +50,10 @@ struct ContentView: View {
 #endif
             }
             .accentColor(Color(hex: "#68BBE3"))
-            .onChange(of: scenePhase) { newPhase in     // 20250422 오늘의할일 새벽 2시 리셋용
+            .onChange(of: scenePhase) { newPhase in
                 if newPhase == .active {
-                    print("🌞 scenePhase.active → todayQueue 강제 체크")
-                    TodayQueueManager.shared.resetExpiredTodayTasks()
+                    print("🌞 scenePhase.active → todayQueue 포그라운드 체크")
+                    TodayQueueManager.shared.performForegroundCheck()
                 }
             }
         } else {
