@@ -13,5 +13,9 @@
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
+	<key>ALADIN_TTB_KEY</key>
+	<string>$(ALADIN_TTB_KEY)</string>
+	<key>GOOGLE_BOOKS_KEY</key>
+	<string>$(GOOGLE_BOOKS_KEY)</string>
 </dict>
 </plist>

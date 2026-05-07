@@ -33,7 +33,13 @@ struct ContentView: View {
                         Label("챌린지", systemImage: "sparkles")
                     }
                     .id(refreshToken)
-                
+
+                BookLibraryView()
+                    .tabItem {
+                        Label("독서", systemImage: "books.vertical")
+                    }
+                    .id(refreshToken)
+
                 // 20250328 Reward 구조 확장 개선
                 RewardListView(user: user)
                     .tabItem {

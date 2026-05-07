@@ -60,7 +60,7 @@ struct DebugToolView: View {
                     .alert(isPresented: $showExportConfirmation) {
                         Alert(
                             title: Text("백업 완료"),
-                            message: Text("Task, Reward, User, Challenge 데이터가 Files에 저장되었습니다."),
+                            message: Text("Task, Reward, User, Challenge, Book 데이터가 Files에 저장되었습니다."),
                             dismissButton: .default(Text("확인"))
                         )
                     }
@@ -118,9 +118,10 @@ struct DebugToolView: View {
                             case "RewardEntity":
                                 CSVManager.importCSV(url: fileURL, into: RewardEntity.self, context: viewContext)
                             case "UserEntity":
-                                //CSVManager.importCSV(url: fileURL, into: UserEntity.self, context: viewContext)
                                 CSVManager.importUserFromCSV(url: fileURL, context: viewContext)
                                 refreshTrigger = UUID()
+                            case "Book":
+                                CSVManager.importCSV(url: fileURL, into: Book.self, context: viewContext)
                             default:
                                 break
                             }
@@ -143,6 +144,7 @@ struct DebugToolView: View {
         _ = CSVManager.exportEntityToCSVToDocuments(entityName: "RewardEntity", filename: "rewards", context: viewContext)
         _ = CSVManager.exportEntityToCSVToDocuments(entityName: "UserEntity", filename: "user", context: viewContext)
         _ = CSVManager.exportEntityToCSVToDocuments(entityName: "ChallengeEntity", filename: "challenges", context: viewContext)
+        _ = CSVManager.exportEntityToCSVToDocuments(entityName: "Book", filename: "books", context: viewContext)
         print("✅ CSV 백업 완료 (Document 디렉토리)")
     }
 

@@ -1,0 +1,3 @@
+#include? "Config.local.xcconfig"
+ALADIN_TTB_KEY = __SET_IN_LOCAL_FILE__
+GOOGLE_BOOKS_KEY = __SET_IN_LOCAL_FILE__

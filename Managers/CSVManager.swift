@@ -224,6 +224,9 @@ struct CSVManager {
                 } else if filename.contains("challenge") {
                     print("📥 챌린지 복원 시작: \(filename)")
                     importCSV(url: url, into: ChallengeEntity.self, context: context)
+                } else if filename.contains("book") {
+                    print("📥 독서기록 복원 시작: \(filename)")
+                    importCSV(url: url, into: Book.self, context: context)
                 } else {
                     print("⚠️ 인식할 수 없는 파일: \(filename) → 스킵됨")
                 }
@@ -298,6 +301,8 @@ struct CSVManager {
                 CSVManager.importUserFromCSV(url: url, context: context)
             case "challenges.csv":
                 CSVManager.importCSV(url: url, into: ChallengeEntity.self, context: context)
+            case "books.csv":
+                CSVManager.importCSV(url: url, into: Book.self, context: context)
             default:
                 print("⚠️ 알 수 없는 파일 무시됨: \(filename)")
             }
