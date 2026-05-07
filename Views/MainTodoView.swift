@@ -33,6 +33,7 @@ struct MainTodoView: View {
     @State private var taskToEdit: TaskEntity? = nil
     @State private var editedTitle: String = ""
     @State private var editedDueDate: Date? = nil
+    @State private var editedRewardLevel: RewardLevel = .easy
     @State private var showEditSheet = false
     @State private var showEditDueDatePicker = false
     
@@ -369,6 +370,15 @@ struct MainTodoView: View {
                 Section("제목") {
                     TextField("할 일", text: $editedTitle)
                 }
+                Section("난이도") {
+                    Picker("난이도", selection: $editedRewardLevel) {
+                        Text(RewardLevel.easy.label).tag(RewardLevel.easy)
+                        Text(RewardLevel.normal.label).tag(RewardLevel.normal)
+                        Text(RewardLevel.hard.label).tag(RewardLevel.hard)
+                        Text(RewardLevel.veryHard.label).tag(RewardLevel.veryHard)
+                    }
+                    .pickerStyle(.segmented)
+                }
                 Section("마감일") {
                     if editedDueDate != nil {
                         DatePicker(
@@ -400,7 +410,9 @@ struct MainTodoView: View {
                         if let task = taskToEdit {
                             task.title = editedTitle
                             task.dueDate = editedDueDate
+                            task.rewardLevelRaw = Int16(editedRewardLevel.rawValue)
                             saveContext()
+                            listRefreshToken += 1
                         }
                         showEditSheet = false
                     }
@@ -464,6 +476,7 @@ struct MainTodoView: View {
                  taskToEdit.wrappedValue = task
                  editedTitle.wrappedValue = task.safeTitle
                  editedDueDate.wrappedValue = task.dueDate
+                 editedRewardLevel = RewardLevel(rawValue: Int(task.rewardLevelRaw)) ?? .easy
                  showEditSheet.wrappedValue = true
              } label: {
                  Label("수정", systemImage: "pencil")
