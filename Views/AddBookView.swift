@@ -31,6 +31,13 @@ struct AddBookView: View {
                 }
                 .padding(.horizontal)
 
+                if let err = vm.errorMessage {
+                    Text(err)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .padding(.horizontal)
+                }
+
                 List(vm.results) { item in
                     NavigationLink {
                         ConfirmBookView(vm: vm, candidate: item)

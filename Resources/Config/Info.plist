@@ -13,6 +13,8 @@
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>책 바코드를 스캔하여 책을 검색합니다.</string>
 	<key>ALADIN_TTB_KEY</key>
 	<string>$(ALADIN_TTB_KEY)</string>
 	<key>GOOGLE_BOOKS_KEY</key>
