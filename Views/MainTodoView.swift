@@ -34,6 +34,7 @@ struct MainTodoView: View {
     @State private var editedTitle: String = ""
     @State private var editedDueDate: Date? = nil
     @State private var editedRewardLevel: RewardLevel = .easy
+    @State private var editedTaskType: TaskType = .personal
     @State private var showEditSheet = false
     @State private var showEditDueDatePicker = false
     
@@ -370,6 +371,14 @@ struct MainTodoView: View {
                 Section("제목") {
                     TextField("할 일", text: $editedTitle)
                 }
+                Section("카테고리") {
+                    Picker("카테고리", selection: $editedTaskType) {
+                        ForEach(TaskType.allCases, id: \.self) { type in
+                            Label(type.label, systemImage: type.icon).tag(type)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
                 Section("난이도") {
                     Picker("난이도", selection: $editedRewardLevel) {
                         Text(RewardLevel.easy.label).tag(RewardLevel.easy)
@@ -411,6 +420,7 @@ struct MainTodoView: View {
                             task.title = editedTitle
                             task.dueDate = editedDueDate
                             task.rewardLevelRaw = Int16(editedRewardLevel.rawValue)
+                            task.taskType = editedTaskType
                             saveContext()
                             listRefreshToken += 1
                         }
@@ -479,6 +489,7 @@ struct MainTodoView: View {
                  editedTitle.wrappedValue = task.safeTitle
                  editedDueDate.wrappedValue = task.dueDate
                  editedRewardLevel = RewardLevel(rawValue: Int(task.rewardLevelRaw)) ?? .easy
+                 editedTaskType = task.taskType
                  showEditSheet.wrappedValue = true
              } label: {
                  Label("수정", systemImage: "pencil")
