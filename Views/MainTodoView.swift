@@ -156,7 +156,7 @@ struct MainTodoView: View {
                                     HStack(spacing: 6) {
                                         Picker("필터", selection: $selectedFilterType) {
                                             Text("전체").tag(nil as TaskType?)
-                                            ForEach(TaskType.allCases.filter { $0 != .work }, id: \.self) { type in
+                                            ForEach(TaskType.allCases, id: \.self) { type in
                                                 Text(type.label).tag(type as TaskType?)
                                             }
                                         }
@@ -305,7 +305,7 @@ struct MainTodoView: View {
 
             HStack {
                 Picker("타입", selection: $selectedTaskType) {
-                    ForEach(TaskType.allCases.filter { $0 != .work }, id: \.self) { type in
+                    ForEach(TaskType.allCases, id: \.self) { type in
                         Label(type.label, systemImage: type.icon)
                             .tag(type)
                     }
