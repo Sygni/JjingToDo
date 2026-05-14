@@ -465,11 +465,13 @@ struct MainTodoView: View {
         }
         .contentShape(Rectangle()) // ⬅️ 이거 매우 중요! 전체 행을 터치 영역으로 지정
         .swipeActions(edge: .leading) {
-            Button {
-                toggleToday(task)
-            } label: {
-                Label(task.isToday ? "해제" : "오늘", systemImage: task.isToday ? "xmark" : "trophy")
-            }.tint(task.isToday ? .pink : .teal)
+            if !task.isCompleted {
+                Button {
+                    toggleToday(task)
+                } label: {
+                    Label(task.isToday ? "해제" : "오늘", systemImage: task.isToday ? "xmark" : "trophy")
+                }.tint(task.isToday ? .pink : .teal)
+            }
         }
         .swipeActions(edge: .trailing) {
              Button {
