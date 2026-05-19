@@ -16,7 +16,7 @@ extension MainTodoView {
         return Calendar.current.isDateInToday(due)
     }
 
-    /// 오늘 할 일 — 자동배정 → 마감오늘 → 수동등록 순
+    /// 오늘 할 일 — 자동배정 → 마감일있음(빠른순) → 마감일없음 순
     var todayTasks: [TaskEntity] {
         taskEntities
             .filter { !$0.isCompleted && ($0.isToday || isDueToday($0)) }
@@ -24,18 +24,17 @@ extension MainTodoView {
                 let p0 = todayPriority($0)
                 let p1 = todayPriority($1)
                 if p0 != p1 { return p0 < p1 }
-                // 같은 그룹 내 2차 정렬: 마감일 있으면 빠른 순, 없으면 taskType
-                if isDueToday($0) && isDueToday($1) {
-                    return ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture)
-                }
+                // 마감일 있는 그룹: 날짜 빠른 순
+                if let d0 = $0.dueDate, let d1 = $1.dueDate { return d0 < d1 }
+                // 마감일 없는 그룹: taskType 순
                 return $0.taskType.rawValue < $1.taskType.rawValue
             }
     }
 
-    /// 0: 자동배정  1: 마감오늘  2: 수동등록
+    /// 0: 자동배정  1: 마감일 있음  2: 마감일 없음(수동등록)
     private func todayPriority(_ task: TaskEntity) -> Int {
         if task.isAutoAssigned { return 0 }
-        if isDueToday(task) { return 1 }
+        if task.dueDate != nil { return 1 }
         return 2
     }
 
