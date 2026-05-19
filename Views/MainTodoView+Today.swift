@@ -9,20 +9,44 @@ import Foundation
 import CoreData
 
 extension MainTodoView {
-    /// 오늘 할 일만 필터링 — 자동배정(🎲) 항목을 맨 위에 고정
+
+    /// dueDate가 오늘인지 여부
+    func isDueToday(_ task: TaskEntity) -> Bool {
+        guard let due = task.dueDate else { return false }
+        return Calendar.current.isDateInToday(due)
+    }
+
+    /// 오늘 할 일 — 자동배정 → 마감오늘 → 수동등록 순
     var todayTasks: [TaskEntity] {
         taskEntities
-            .filter { $0.isToday && !$0.isCompleted }
+            .filter { !$0.isCompleted && ($0.isToday || isDueToday($0)) }
             .sorted {
-                if $0.isAutoAssigned != $1.isAutoAssigned { return $0.isAutoAssigned }
+                let p0 = todayPriority($0)
+                let p1 = todayPriority($1)
+                if p0 != p1 { return p0 < p1 }
+                // 같은 그룹 내 2차 정렬: 마감일 있으면 빠른 순, 없으면 taskType
+                if isDueToday($0) && isDueToday($1) {
+                    return ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture)
+                }
                 return $0.taskType.rawValue < $1.taskType.rawValue
             }
+    }
+
+    /// 0: 자동배정  1: 마감오늘  2: 수동등록
+    private func todayPriority(_ task: TaskEntity) -> Int {
+        if task.isAutoAssigned { return 0 }
+        if isDueToday(task) { return 1 }
+        return 2
     }
 
     /// 나머지(일반) 태스크
     var otherTasks: [TaskEntity] {
         // 완료된 항목은 isToday=true여도 여기에 포함 (데이터 정합성 깨진 경우 복구)
-        var base = sortedTaskEntities.filter { !$0.isToday || $0.isCompleted }
+        // 미완료 중 마감오늘 항목은 todayTasks에 표시되므로 제외
+        var base = sortedTaskEntities.filter {
+            if $0.isCompleted { return true }           // 완료된 건 항상 포함 (isToday=true 복구 포함)
+            return !$0.isToday && !isDueToday($0)       // 미완료는 오늘 미션 아닌 것만
+        }
 
         if let selected = selectedFilterType {
             base = base.filter { $0.taskType == selected }
