@@ -25,9 +25,11 @@ struct AddBookView: View {
                     TextField("책 제목/저자/ISBN 검색", text: $vm.query)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                     if vm.isLoading { ProgressView() }
+                    #if !targetEnvironment(macCatalyst)
                     Button(action: { showScanner = true }) {
                         Image(systemName: "barcode.viewfinder").imageScale(.large)
                     }
+                    #endif
                 }
                 .padding(.horizontal)
 
@@ -98,6 +100,7 @@ struct AddBookView: View {
                 ConfirmBookView(vm: vm, candidate: b)
             }
         }
+        #if !targetEnvironment(macCatalyst)
         .sheet(isPresented: $showScanner) {
             BarcodeScannerView { code in
                 showScanner = false
@@ -121,5 +124,6 @@ struct AddBookView: View {
                 }
             }
         }
+        #endif
     }
 }
