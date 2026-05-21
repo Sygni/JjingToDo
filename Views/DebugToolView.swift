@@ -68,10 +68,19 @@ struct DebugToolView: View {
                     }
 
                     Button("📥 CSV 불러오기") {
-                        //CSVManager.importAllCSVFromDocuments(context: viewContext)
-                        importEntityType = nil  // ✅ 전체 불러오기용 시그널
+                        importEntityType = nil
                         showImportPicker = true
-                        //refreshTrigger = UUID()
+                    }
+                    .sheet(isPresented: $showImportPicker) {
+                        DocumentImporter(isPresented: $showImportPicker) { urls in
+                            urls.forEach { _ = $0.startAccessingSecurityScopedResource() }
+                            defer { urls.forEach { $0.stopAccessingSecurityScopedResource() } }
+                            CSVManager.importAllCSVFromDocuments(urls: urls, context: viewContext)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                refreshTrigger = UUID()
+                            }
+                        }
+                        .ignoresSafeArea()
                     }
                 }
 
@@ -88,43 +97,6 @@ struct DebugToolView: View {
                 }
             }
             .navigationTitle("설정")
-            .fileImporter(
-                isPresented: $showImportPicker,
-                allowedContentTypes: [UTType.text, UTType.commaSeparatedText],
-                allowsMultipleSelection: true   // 여러 파일 한꺼번에 선택 가능
-            ) { result in
-                guard let selectedFiles = try? result.get() else { return }
-
-                // startAccessingSecurityScopedResource 반환값에 관계없이 호출
-                // (Mac Catalyst에서 false를 반환해도 파일은 실제로 접근 가능한 경우 있음)
-                selectedFiles.forEach { _ = $0.startAccessingSecurityScopedResource() }
-                defer { selectedFiles.forEach { $0.stopAccessingSecurityScopedResource() } }
-
-                if importEntityType == nil {
-                    // 파일명으로 entity 자동 판별해서 전체 복원
-                    CSVManager.importAllCSVFromDocuments(urls: selectedFiles, context: viewContext)
-                } else {
-                    for fileURL in selectedFiles {
-                        switch importEntityType {
-                        case "TaskEntity":
-                            CSVManager.importCSV(url: fileURL, into: TaskEntity.self, context: viewContext)
-                        case "RewardEntity":
-                            CSVManager.importCSV(url: fileURL, into: RewardEntity.self, context: viewContext)
-                        case "UserEntity":
-                            CSVManager.importUserFromCSV(url: fileURL, context: viewContext)
-                        case "Book":
-                            CSVManager.importCSV(url: fileURL, into: Book.self, context: viewContext)
-                        default:
-                            break
-                        }
-                    }
-                }
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    refreshTrigger = UUID()
-                }
-            }
-
         }
     }
 
@@ -231,6 +203,38 @@ struct DebugToolView: View {
             print("🧪 남아있는 태스크 수: \(tasks.count)")
         } catch {
             print("❌ 태스크 fetch 실패: \(error.localizedDescription)")
+        }
+    }
+}
+
+// MARK: - Document Importer (UIDocumentPickerViewController 래퍼)
+struct DocumentImporter: UIViewControllerRepresentable {
+    @Binding var isPresented: Bool
+    let onPick: ([URL]) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let types: [UTType] = [.commaSeparatedText, .text, .plainText]
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: true)
+        picker.allowsMultipleSelection = true
+        picker.shouldShowFileExtensions = true
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let parent: DocumentImporter
+        init(_ parent: DocumentImporter) { self.parent = parent }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            parent.onPick(urls)
+            parent.isPresented = false
+        }
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            parent.isPresented = false
         }
     }
 }
