@@ -91,50 +91,37 @@ struct DebugToolView: View {
             .fileImporter(
                 isPresented: $showImportPicker,
                 allowedContentTypes: [UTType.text, UTType.commaSeparatedText],
-                allowsMultipleSelection: false
+                allowsMultipleSelection: true   // 여러 파일 한꺼번에 선택 가능
             ) { result in
-                do {
-                    let selectedFiles = try result.get()
-                    
+                guard let selectedFiles = try? result.get() else { return }
+
+                // startAccessingSecurityScopedResource 반환값에 관계없이 호출
+                // (Mac Catalyst에서 false를 반환해도 파일은 실제로 접근 가능한 경우 있음)
+                selectedFiles.forEach { _ = $0.startAccessingSecurityScopedResource() }
+                defer { selectedFiles.forEach { $0.stopAccessingSecurityScopedResource() } }
+
+                if importEntityType == nil {
+                    // 파일명으로 entity 자동 판별해서 전체 복원
+                    CSVManager.importAllCSVFromDocuments(urls: selectedFiles, context: viewContext)
+                } else {
                     for fileURL in selectedFiles {
-                        print("📄 선택한 파일 URL: \(fileURL)")
-                        print("📄 경로 접근 가능? \(FileManager.default.isReadableFile(atPath: fileURL.path))")
-                        
-                        if fileURL.startAccessingSecurityScopedResource() {
-                            defer { fileURL.stopAccessingSecurityScopedResource() }
-                            
-                            //guard let entityType = importEntityType else { return }
-                            
-                            guard let entityType = importEntityType else {
-                                print("📦 entityType이 nil → 전체 CSV 불러오기 수행")
-                                CSVManager.importAllCSVFromDocuments(urls: selectedFiles, context: viewContext)
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                    refreshTrigger = UUID()   // ✅ 살짝 딜레이로 리스트 안전하게 갱신
-                                }
-                                return
-                            }
-                            
-                            switch entityType {
-                            case "TaskEntity":
-                                CSVManager.importCSV(url: fileURL, into: TaskEntity.self, context: viewContext)
-                            case "RewardEntity":
-                                CSVManager.importCSV(url: fileURL, into: RewardEntity.self, context: viewContext)
-                            case "UserEntity":
-                                CSVManager.importUserFromCSV(url: fileURL, context: viewContext)
-                                refreshTrigger = UUID()
-                            case "Book":
-                                CSVManager.importCSV(url: fileURL, into: Book.self, context: viewContext)
-                            default:
-                                break
-                            }
-                            
-                            refreshTrigger = UUID()
-                        } else {
-                            print("❌ 보안 접근 권한 실패: \(fileURL)")
+                        switch importEntityType {
+                        case "TaskEntity":
+                            CSVManager.importCSV(url: fileURL, into: TaskEntity.self, context: viewContext)
+                        case "RewardEntity":
+                            CSVManager.importCSV(url: fileURL, into: RewardEntity.self, context: viewContext)
+                        case "UserEntity":
+                            CSVManager.importUserFromCSV(url: fileURL, context: viewContext)
+                        case "Book":
+                            CSVManager.importCSV(url: fileURL, into: Book.self, context: viewContext)
+                        default:
+                            break
                         }
                     }
-                } catch {
-                    print("❌ 파일 가져오기 실패: \(error.localizedDescription)")
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    refreshTrigger = UUID()
                 }
             }
 

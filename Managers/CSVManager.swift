@@ -204,34 +204,28 @@ struct CSVManager {
         }
     }
     
+    /// 파일명으로 entity 타입 자동 판별 후 import
+    /// 호출 전에 startAccessingSecurityScopedResource 처리는 호출자가 담당
     static func importAllCSVFromDocuments(urls: [URL], context: NSManagedObjectContext) {
         for url in urls {
             let filename = url.lastPathComponent.lowercased()
-
-            if url.startAccessingSecurityScopedResource() {
-                defer { url.stopAccessingSecurityScopedResource() }
-
-                if filename.contains("task") {
-                    print("📥 태스크 복원 시작: \(filename)")
-                    importCSV(url: url, into: TaskEntity.self, context: context)
-                } else if filename.contains("reward") {
-                    print("📥 보상 복원 시작: \(filename)")
-                    importCSV(url: url, into: RewardEntity.self, context: context)
-                } else if filename.contains("user") {
-                    print("📥 유저 복원 시작: \(filename)")
-                    //importCSV(url: url, into: UserEntity.self, context: context)
-                    importUserFromCSV(url: url, context: context)
-                } else if filename.contains("challenge") {
-                    print("📥 챌린지 복원 시작: \(filename)")
-                    importCSV(url: url, into: ChallengeEntity.self, context: context)
-                } else if filename.contains("book") {
-                    print("📥 독서기록 복원 시작: \(filename)")
-                    importCSV(url: url, into: Book.self, context: context)
-                } else {
-                    print("⚠️ 인식할 수 없는 파일: \(filename) → 스킵됨")
-                }
+            if filename.contains("task") {
+                print("📥 태스크 복원: \(filename)")
+                importCSV(url: url, into: TaskEntity.self, context: context)
+            } else if filename.contains("reward") {
+                print("📥 보상 복원: \(filename)")
+                importCSV(url: url, into: RewardEntity.self, context: context)
+            } else if filename.contains("user") {
+                print("📥 유저 복원: \(filename)")
+                importUserFromCSV(url: url, context: context)
+            } else if filename.contains("challenge") {
+                print("📥 챌린지 복원: \(filename)")
+                importCSV(url: url, into: ChallengeEntity.self, context: context)
+            } else if filename.contains("book") {
+                print("📥 독서기록 복원: \(filename)")
+                importCSV(url: url, into: Book.self, context: context)
             } else {
-                print("❌ 접근 권한 실패: \(url)")
+                print("⚠️ 인식할 수 없는 파일: \(filename) → 스킵")
             }
         }
     }
