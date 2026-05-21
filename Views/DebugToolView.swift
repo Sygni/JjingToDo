@@ -68,11 +68,10 @@ struct DebugToolView: View {
                     }
 
                     Button("📥 CSV 불러오기") {
-                        importEntityType = nil
                         showImportPicker = true
                     }
-                    .sheet(isPresented: $showImportPicker) {
-                        DocumentImporter(isPresented: $showImportPicker) { urls in
+                    .background(
+                        ImportPickerPresenter(isPresented: $showImportPicker) { urls in
                             urls.forEach { _ = $0.startAccessingSecurityScopedResource() }
                             defer { urls.forEach { $0.stopAccessingSecurityScopedResource() } }
                             CSVManager.importAllCSVFromDocuments(urls: urls, context: viewContext)
@@ -80,8 +79,7 @@ struct DebugToolView: View {
                                 refreshTrigger = UUID()
                             }
                         }
-                        .ignoresSafeArea()
-                    }
+                    )
                 }
 
                 Section(header: Text("📖 가이드")) {
@@ -207,34 +205,42 @@ struct DebugToolView: View {
     }
 }
 
-// MARK: - Document Importer (UIDocumentPickerViewController 래퍼)
-struct DocumentImporter: UIViewControllerRepresentable {
+// MARK: - Import Picker Presenter
+// .sheet 없이 UIKit에서 직접 present — Mac Catalyst에서 sheet 루프 방지
+struct ImportPickerPresenter: UIViewRepresentable {
     @Binding var isPresented: Bool
     let onPick: ([URL]) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
+    func makeUIView(context: Context) -> UIView { UIView() }
 
-    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+    func updateUIView(_ uiView: UIView, context: Context) {
+        guard isPresented, context.coordinator.picker == nil else { return }
         let types: [UTType] = [.commaSeparatedText, .text, .plainText]
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: true)
         picker.allowsMultipleSelection = true
         picker.shouldShowFileExtensions = true
         picker.delegate = context.coordinator
-        return picker
+        context.coordinator.picker = picker
+        DispatchQueue.main.async {
+            uiView.window?.rootViewController?.present(picker, animated: true)
+        }
     }
 
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
-
     class Coordinator: NSObject, UIDocumentPickerDelegate {
-        let parent: DocumentImporter
-        init(_ parent: DocumentImporter) { self.parent = parent }
+        var parent: ImportPickerPresenter
+        var picker: UIDocumentPickerViewController?
+        init(_ parent: ImportPickerPresenter) { self.parent = parent }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             parent.onPick(urls)
-            parent.isPresented = false
+            finish()
         }
-        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-            parent.isPresented = false
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { finish() }
+
+        private func finish() {
+            picker = nil
+            DispatchQueue.main.async { self.parent.isPresented = false }
         }
     }
 }
