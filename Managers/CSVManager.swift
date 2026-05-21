@@ -237,35 +237,35 @@ struct CSVManager {
     }
     
     
-    static func exportEntityToCSVToDocuments(entityName: String, filename: String, context: NSManagedObjectContext) -> URL? {
+    /// 지정 디렉토리에 CSV 저장 후 URL 반환 (공유 시트용 임시 폴더 등에 활용)
+    static func exportEntityToCSV(entityName: String, filename: String,
+                                   to directory: URL, context: NSManagedObjectContext) -> URL? {
         guard let entity = NSEntityDescription.entity(forEntityName: entityName, in: context) else { return nil }
-
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: entityName)
         do {
             let objects = try context.fetch(fetchRequest)
             let attributeNames = entity.attributesByName.keys.sorted()
-
             var csvString = attributeNames.joined(separator: ",") + "\n"
-
             for object in objects {
                 let values = attributeNames.map { key -> String in
-                    if let value = object.value(forKey: key) {
-                        return "\"\(value)\""
-                    } else {
-                        return "\"\""
-                    }
+                    if let value = object.value(forKey: key) { return "\"\(value)\"" }
+                    else { return "\"\"" }
                 }
                 csvString += values.joined(separator: ",") + "\n"
             }
-
-            let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let fileURL = docURL.appendingPathComponent("\(filename).csv")
+            let fileURL = directory.appendingPathComponent("\(filename).csv")
             try csvString.write(to: fileURL, atomically: true, encoding: .utf8)
             return fileURL
         } catch {
             print("Export error: \(error)")
             return nil
         }
+    }
+
+    /// 하위 호환용 — Documents 폴더에 저장
+    static func exportEntityToCSVToDocuments(entityName: String, filename: String, context: NSManagedObjectContext) -> URL? {
+        let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return exportEntityToCSV(entityName: entityName, filename: filename, to: docURL, context: context)
     }
 
     // MARK: - CSV Parser (Comma-safe)

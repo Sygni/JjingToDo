@@ -17,6 +17,8 @@ struct DebugToolView: View {
     @State private var showExportConfirmation = false
     @State private var showImportPicker = false
     @State private var importEntityType: String? = nil
+    @State private var exportURLs: [URL] = []
+    @State private var showExportPicker = false
 
     var versionString: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
@@ -54,15 +56,15 @@ struct DebugToolView: View {
 
                 Section(header: Text("📦 백업 및 복원")) {
                     Button("📤 CSV 백업(All Data)") {
-                        exportAllToDocuments()
-                        showExportConfirmation = true
+                        let urls = buildExportURLs()
+                        if !urls.isEmpty {
+                            exportURLs = urls
+                            showExportPicker = true
+                        }
                     }
-                    .alert(isPresented: $showExportConfirmation) {
-                        Alert(
-                            title: Text("백업 완료"),
-                            message: Text("Task, Reward, User, Challenge, Book 데이터가 Files에 저장되었습니다."),
-                            dismissButton: .default(Text("확인"))
-                        )
+                    .sheet(isPresented: $showExportPicker) {
+                        DocumentExporter(urls: exportURLs, isPresented: $showExportPicker)
+                            .ignoresSafeArea()
                     }
 
                     Button("📥 CSV 불러오기") {
@@ -139,13 +141,30 @@ struct DebugToolView: View {
         }
     }
 
+    /// 임시 폴더에 CSV 생성 후 URL 목록 반환 (문서 피커에 넘김)
+    private func buildExportURLs() -> [URL] {
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("JjingToDo_backup_\(Int(Date().timeIntervalSince1970))", isDirectory: true)
+        try? FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+
+        let exports: [(String, String)] = [
+            ("TaskEntity", "tasks"),
+            ("RewardEntity", "rewards"),
+            ("UserEntity", "user"),
+            ("ChallengeEntity", "challenges"),
+            ("Book", "books")
+        ]
+        return exports.compactMap {
+            CSVManager.exportEntityToCSV(entityName: $0.0, filename: $0.1, to: tmp, context: viewContext)
+        }
+    }
+
     private func exportAllToDocuments() {
         _ = CSVManager.exportEntityToCSVToDocuments(entityName: "TaskEntity", filename: "tasks", context: viewContext)
         _ = CSVManager.exportEntityToCSVToDocuments(entityName: "RewardEntity", filename: "rewards", context: viewContext)
         _ = CSVManager.exportEntityToCSVToDocuments(entityName: "UserEntity", filename: "user", context: viewContext)
         _ = CSVManager.exportEntityToCSVToDocuments(entityName: "ChallengeEntity", filename: "challenges", context: viewContext)
         _ = CSVManager.exportEntityToCSVToDocuments(entityName: "Book", filename: "books", context: viewContext)
-        print("✅ CSV 백업 완료 (Document 디렉토리)")
     }
 
     private func resetAllData() {
@@ -226,6 +245,30 @@ struct DebugToolView: View {
         } catch {
             print("❌ 태스크 fetch 실패: \(error.localizedDescription)")
         }
+    }
+}
+
+// MARK: - Document Exporter (UIDocumentPickerViewController 래퍼)
+struct DocumentExporter: UIViewControllerRepresentable {
+    let urls: [URL]
+    @Binding var isPresented: Bool
+
+    func makeCoordinator() -> Coordinator { Coordinator(isPresented: $isPresented) }
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forExporting: urls, asCopy: true)
+        picker.delegate = context.coordinator
+        picker.shouldShowFileExtensions = true
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        @Binding var isPresented: Bool
+        init(isPresented: Binding<Bool>) { _isPresented = isPresented }
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { isPresented = false }
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { isPresented = false }
     }
 }
 
