@@ -49,28 +49,16 @@ final class BookSearchViewModel: ObservableObject {
         guard !q.trimmingCharacters(in: .whitespaces).isEmpty else { results = []; return }
         isLoading = true
 
+        // 소스별 쿼리 가공(intitle: 등)은 MultiSourceSearchService가 담당 —
+        // 여기서 감싸면 알라딘에 "intitle:..."가 문자 그대로 전달되는 버그가 생김
         let query: String = {
             let digits = q.filter(\.isNumber)
             if digits.count == 13 || digits.count == 10 { return "isbn:\(digits)" }
-            if q.contains("/") {
-                let parts = q.split(separator: "/", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
-                let title = parts.first ?? ""
-                let author = parts.count > 1 ? parts[1] : ""
-                if !author.isEmpty { return "intitle:\(title) inauthor:\(author)" }
-            }
-            if !q.lowercased().hasPrefix("isbn:") { return "intitle:\(q)" }
             return q
         }()
 
         do {
-            let r1 = try await service.search(query: query)
-            if !r1.isEmpty {
-                results = r1
-            } else if !query.hasPrefix("isbn:") {
-                results = (try? await service.search(query: q)) ?? []
-            } else {
-                results = []
-            }
+            results = try await service.search(query: query)
         } catch {
             errorMessage = error.localizedDescription
             results = []

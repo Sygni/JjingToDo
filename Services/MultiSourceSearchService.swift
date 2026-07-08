@@ -25,8 +25,18 @@ struct MultiSourceSearchService: BookSearchService {
                 return await g
             }
         } else {
-            async let a: [SearchBook] = (try? await aladin.search(title: trimmed, max: 20)) ?? []
-            async let g: [SearchBook] = (try? await google.search(query: "intitle:\(trimmed)")) ?? []
+            // "제목/저자" 구문 지원
+            var aladinQuery = trimmed
+            var googleQuery = "intitle:\(trimmed)"
+            if trimmed.contains("/") {
+                let parts = trimmed.split(separator: "/", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
+                let t = parts.first ?? ""
+                let a = parts.count > 1 ? parts[1] : ""
+                aladinQuery = a.isEmpty ? t : "\(t) \(a)"
+                googleQuery = a.isEmpty ? "intitle:\(t)" : "intitle:\(t) inauthor:\(a)"
+            }
+            async let a: [SearchBook] = (try? await aladin.search(title: aladinQuery, max: 20)) ?? []
+            async let g: [SearchBook] = (try? await google.search(query: googleQuery)) ?? []
             return merge(primary: await a, others: await g)
         }
     }
