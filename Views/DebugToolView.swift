@@ -88,7 +88,7 @@ struct DebugToolView: View {
                 }
 
                 Section(header: Text("📚 독서 탭")) {
-                    Toggle("책등에 표지 색 반영", isOn: $spineUsesCoverColor)
+                    Toggle("책등에 표지 반영", isOn: $spineUsesCoverColor)
 
                     Button {
                         backfillCovers()
