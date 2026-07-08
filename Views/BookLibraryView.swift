@@ -18,6 +18,7 @@ struct BookLibraryView: View {
     @State private var showingAddBook = false
     @State private var editingBook: Book? = nil
     @State private var bookToDelete: Book? = nil
+    @State private var detailBook: Book? = nil
 
     var body: some View {
         NavigationStack {
@@ -67,6 +68,7 @@ struct BookLibraryView: View {
                                         Spacer()
                                     }
                                     .contentShape(Rectangle())
+                                    .onTapGesture { detailBook = book }
                                     .swipeActions(edge: .trailing) {
                                         Button(role: .destructive) {
                                             bookToDelete = book
@@ -112,6 +114,9 @@ struct BookLibraryView: View {
                     book: bk
                 )
             }
+            .sheet(item: $detailBook) { bk in
+                BookDetailView(book: bk, context: viewContext)
+            }
             .alert("이 책을 삭제할까요?", isPresented: .constant(bookToDelete != nil)) {
                 Button("취소", role: .cancel) { bookToDelete = nil }
                 Button("삭제", role: .destructive) {
@@ -141,6 +146,101 @@ struct BookLibraryView: View {
             flags.append(runIndex % 2 == 1)
         }
         return flags
+    }
+}
+
+// MARK: - 책 상세 보기 (탭하면 표시, 편집으로 바로 연결)
+struct BookDetailView: View {
+    @ObservedObject var book: Book
+    let context: NSManagedObjectContext
+    @Environment(\.dismiss) private var dismiss
+    @State private var showEdit = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 18) {
+                    // 표지
+                    if let s = book.coverURL, let url = URL(string: s) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let img): img.resizable().scaledToFill()
+                            default: Color.gray.opacity(0.15)
+                            }
+                        }
+                        .frame(width: 140, height: 200)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 5)
+                    } else {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.gray.opacity(0.12))
+                            .frame(width: 140, height: 200)
+                            .overlay(
+                                Image(systemName: "book.closed")
+                                    .font(.largeTitle)
+                                    .foregroundStyle(.secondary)
+                            )
+                    }
+
+                    VStack(spacing: 6) {
+                        Text(book.title ?? "")
+                            .font(.title3.bold())
+                            .multilineTextAlignment(.center)
+                        if let author = book.author, !author.isEmpty {
+                            Text(author)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    VStack(spacing: 0) {
+                        infoRow(label: "페이지", value: "\(max(1, Int(book.pages)))쪽")
+                        Divider().padding(.leading, 16)
+                        infoRow(label: "언어", value: book.isKorean ? "한국어" : "외국어")
+                        Divider().padding(.leading, 16)
+                        infoRow(label: "읽은 날짜", value: dateText)
+                    }
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal)
+                }
+                .padding(.top, 24)
+                .padding(.bottom, 32)
+                .frame(maxWidth: .infinity)
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("책 정보")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("닫기") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("편집") { showEdit = true }.bold()
+                }
+            }
+            .sheet(isPresented: $showEdit) {
+                EditBookView(vm: BookSearchViewModel(context: context), book: book)
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private var dateText: String {
+        guard let d = book.dateRead else { return "설정 안 함" }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ko_KR")
+        f.dateFormat = "yyyy년 M월 d일"
+        return f.string(from: d)
+    }
+
+    private func infoRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label).foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+        }
+        .font(.subheadline)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 }
 
