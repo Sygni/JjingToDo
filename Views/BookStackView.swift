@@ -15,9 +15,25 @@ private func safeCGFloat(_ x: CGFloat, min minV: CGFloat = 0,
     return Swift.max(minV, Swift.min(x, maxV))
 }
 
+// MARK: - 이미지 회전
+private extension UIImage {
+    /// 왼쪽(반시계)으로 90도 회전 — 눕혀 쌓은 책 방향에 맞춤
+    func rotated90CCW() -> UIImage {
+        let newSize = CGSize(width: size.height, height: size.width)
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        return renderer.image { ctx in
+            let c = ctx.cgContext
+            c.translateBy(x: 0, y: newSize.height)
+            c.rotate(by: -.pi / 2)
+            draw(in: CGRect(origin: .zero, size: size))
+        }
+    }
+}
+
 // MARK: - 표지 이미지 저장소 (메모리 + 디스크 캐시)
 enum CoverImageStore {
     private static let memCache = NSCache<NSString, UIImage>()
+    private static let rotatedCache = NSCache<NSString, UIImage>()
 
     private static let dir: URL = {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -50,6 +66,16 @@ enum CoverImageStore {
         try? data.write(to: file, options: .atomic)
         memCache.setObject(img, forKey: key)
         return img
+    }
+
+    /// 책등 텍스처용 — 왼쪽으로 90도 회전된 표지 (회전 결과도 메모리 캐시)
+    static func spineImage(for urlString: String) async -> UIImage? {
+        let key = ("rot|" + urlString) as NSString
+        if let hit = rotatedCache.object(forKey: key) { return hit }
+        guard let img = await image(for: urlString) else { return nil }
+        let rotated = img.rotated90CCW()
+        rotatedCache.setObject(rotated, forKey: key)
+        return rotated
     }
 }
 
@@ -224,7 +250,7 @@ struct BookStackView: View {
         .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Color.black.opacity(0.05), lineWidth: 0.8))
         .task(id: "\(book.coverURL ?? "")|\(useCoverTexture)") {
             guard useCoverTexture, let s = book.coverURL, !s.isEmpty else { return }
-            coverImage = await CoverImageStore.image(for: s)
+            coverImage = await CoverImageStore.spineImage(for: s)
             coverDominant = await CoverColorExtractor.dominantColor(from: s)
         }
     }
