@@ -88,6 +88,7 @@ final class BookSearchViewModel: ObservableObject {
         book.author = s.authors.first ?? ""
         book.pages = Int32(s.pageCount ?? 0)
         book.dateRead = dateRead
+        book.coverURL = s.coverURL?.absoluteString
         let lang = s.languageCode?.lowercased()
         book.isKorean = (lang == "ko") || s.title.contains { $0 >= "가" && $0 <= "힣" }
 
@@ -122,6 +123,7 @@ final class BookSearchViewModel: ObservableObject {
         book.pages = Int32(finalPages)
         book.isKorean = finalIsKorean
         book.dateRead = dateRead
+        book.coverURL = s.coverURL?.absoluteString
 
         do {
             try context.save()

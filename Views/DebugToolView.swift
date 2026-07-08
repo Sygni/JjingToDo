@@ -20,6 +20,11 @@ struct DebugToolView: View {
     @State private var exportURLs: [URL] = []
     @State private var showExportPicker = false
 
+    // 독서 탭 — 책등 표지 색
+    @AppStorage("spineUsesCoverColor") private var spineUsesCoverColor = true
+    @State private var isBackfillingCovers = false
+    @State private var backfillStatus: String? = nil
+
     var versionString: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
@@ -82,6 +87,26 @@ struct DebugToolView: View {
                     )
                 }
 
+                Section(header: Text("📚 독서 탭")) {
+                    Toggle("책등에 표지 색 반영", isOn: $spineUsesCoverColor)
+
+                    Button {
+                        backfillCovers()
+                    } label: {
+                        HStack {
+                            Text("📕 책 표지 일괄 가져오기")
+                            if isBackfillingCovers { Spacer(); ProgressView() }
+                        }
+                    }
+                    .disabled(isBackfillingCovers)
+
+                    if let status = backfillStatus {
+                        Text(status)
+                            .font(.footnote)
+                            .foregroundColor(.gray)
+                    }
+                }
+
                 Section(header: Text("📖 가이드")) {
                     NavigationLink(destination: PointGuideView()) {
                         Label("포인트 가이드", systemImage: "star.circle")
@@ -95,6 +120,51 @@ struct DebugToolView: View {
                 }
             }
             .navigationTitle("설정")
+        }
+    }
+
+    /// coverURL 없는 책들을 제목으로 재검색해서 표지 URL 채우기
+    private func backfillCovers() {
+        isBackfillingCovers = true
+        backfillStatus = nil
+
+        _Concurrency.Task { @MainActor in
+            let req = NSFetchRequest<Book>(entityName: "Book")
+            let books = (try? viewContext.fetch(req)) ?? []
+            let targets = books.filter { ($0.coverURL ?? "").isEmpty && !($0.title ?? "").isEmpty }
+
+            guard !targets.isEmpty else {
+                backfillStatus = "표지가 없는 책이 없습니다."
+                isBackfillingCovers = false
+                return
+            }
+
+            let service = MultiSourceSearchService()
+            var found = 0
+
+            for (idx, book) in targets.enumerated() {
+                backfillStatus = "검색 중... (\(idx + 1)/\(targets.count))"
+                let title = (book.title ?? "").trimmingCharacters(in: .whitespaces)
+                let results = (try? await service.search(query: title)) ?? []
+
+                let lowTitle = title.lowercased()
+                // 제목이 정확히 일치하는 결과 우선, 없으면 표지가 있는 첫 결과
+                let best = results.first { $0.coverURL != nil && $0.title.lowercased() == lowTitle }
+                    ?? results.first { $0.coverURL != nil }
+
+                if let url = best?.coverURL {
+                    book.coverURL = url.absoluteString
+                    found += 1
+                }
+
+                // API 연속 호출 부담 완화
+                try? await _Concurrency.Task.sleep(nanoseconds: 300_000_000)
+            }
+
+            try? viewContext.save()
+            backfillStatus = "완료: \(found)/\(targets.count)권 표지 저장됨"
+            isBackfillingCovers = false
+            refreshTrigger = UUID()
         }
     }
 
