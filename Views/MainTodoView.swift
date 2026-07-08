@@ -259,7 +259,16 @@ struct MainTodoView: View {
                     .submitLabel(.done)
 
                 Button {
-                    withAnimation { showDueDatePicker.toggle() }
+                    withAnimation {
+                        showDueDatePicker.toggle()
+                        if showDueDatePicker {
+                            // 피커를 열면 기본값(오늘)을 실제 값으로 반영
+                            if newTaskDueDate == nil { newTaskDueDate = Date() }
+                        } else {
+                            // 피커를 닫으면 마감일 해제
+                            newTaskDueDate = nil
+                        }
+                    }
                 } label: {
                     Image(systemName: newTaskDueDate != nil ? "calendar.badge.checkmark" : "calendar")
                         .foregroundColor(newTaskDueDate != nil ? .accentColor : .secondary)
