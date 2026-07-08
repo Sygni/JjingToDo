@@ -32,22 +32,47 @@ struct MultiSourceSearchService: BookSearchService {
     }
 
     private func merge(primary: [SearchBook], others: [SearchBook]) -> [SearchBook] {
-        func key(_ b: SearchBook) -> String {
-            "\(b.title.lowercased())|\(b.authors.first?.lowercased() ?? "")"
+        // 소스별 표기 차이를 흡수하는 정규화 키
+        // 예: 알라딘 "채식주의자 (개정판)" / "한강 (지은이)" ↔ 구글 "채식주의자" / "한강"
+        func normalize(_ s: String) -> String {
+            s.lowercased()
+                .replacingOccurrences(of: #"\([^)]*\)"#, with: "", options: .regularExpression)
+                .replacingOccurrences(of: #"[\s\-:·,.!?'"“”‘’]"#, with: "", options: .regularExpression)
         }
+        func key(_ b: SearchBook) -> String {
+            "\(normalize(b.title))|\(normalize(b.authors.first ?? ""))"
+        }
+        // 저자 표기가 크게 다를 때를 위한 제목 단독 키 (보조 매칭용)
+        func titleKey(_ b: SearchBook) -> String { normalize(b.title) }
+
         var dict: [String: SearchBook] = [:]
-        for b in primary { dict[key(b)] = b }
+        var order: [String] = []
+        for b in primary {
+            let k = key(b)
+            if dict[k] == nil { order.append(k) }
+            dict[k] = b
+        }
+
+        var titleIndex: [String: String] = [:]   // titleKey → full key
+        for (k, b) in dict { titleIndex[titleKey(b)] = k }
+
         for o in others {
             let k = key(o)
-            if var base = dict[k] {
+            // 정확 키 → 없으면 제목 단독 키로 보조 매칭
+            let matchKey = dict[k] != nil ? k : titleIndex[titleKey(o)]
+
+            if let mk = matchKey, var base = dict[mk] {
                 if (base.pageCount ?? 0) <= 0, let gp = o.pageCount, gp > 0 { base.pageCount = gp }
                 else if let gp = o.pageCount, let bp = base.pageCount, gp > bp { base.pageCount = gp }
                 if base.languageCode == nil, let lang = o.languageCode { base.languageCode = lang }
-                dict[k] = base
+                if base.coverURL == nil, let cover = o.coverURL { base.coverURL = cover }
+                dict[mk] = base
             } else {
+                if dict[k] == nil { order.append(k) }
                 dict[k] = o
+                titleIndex[titleKey(o)] = k
             }
         }
-        return Array(dict.values)
+        return order.compactMap { dict[$0] }
     }
 }
