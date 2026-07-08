@@ -19,6 +19,8 @@ extension Book {
     @NSManaged public var isKorean: Bool
     @NSManaged public var dateRead: Date?
     @NSManaged public var coverURL: String?
+    @NSManaged public var publisher: String?
+    @NSManaged public var language: String?
 
 }
 

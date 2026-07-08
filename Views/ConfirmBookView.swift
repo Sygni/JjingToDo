@@ -12,8 +12,9 @@ struct ConfirmBookView: View {
 
     @State private var title: String
     @State private var author: String
+    @State private var publisher: String
     @State private var pages: String
-    @State private var isKorean: Bool
+    @State private var language: String
     @State private var dateRead: Date = Date()
 
     @Environment(\.dismiss) private var dismiss
@@ -23,9 +24,9 @@ struct ConfirmBookView: View {
         self.candidate = candidate
         _title = State(initialValue: candidate.title)
         _author = State(initialValue: candidate.authors.first ?? "")
+        _publisher = State(initialValue: candidate.publisher ?? "")
         _pages = State(initialValue: candidate.pageCount.map(String.init) ?? "")
-        let lang = candidate.languageCode?.lowercased()
-        _isKorean = State(initialValue: (lang == "ko") || candidate.title.contains { $0 >= "가" && $0 <= "힣" })
+        _language = State(initialValue: BookLanguage.infer(code: candidate.languageCode, title: candidate.title))
     }
 
     var body: some View {
@@ -59,8 +60,12 @@ struct ConfirmBookView: View {
             Section(header: Text("세부 입력")) {
                 TextField("제목", text: $title)
                 TextField("저자", text: $author)
+                TextField("출판사", text: $publisher)
                 TextField("페이지 수", text: $pages).keyboardType(.numberPad)
-                Toggle("한국어 책", isOn: $isKorean)
+            }
+
+            Section(header: Text("언어")) {
+                LanguagePickerField(language: $language)
             }
 
             Section(header: Text("읽은 날짜")) {
@@ -81,7 +86,8 @@ struct ConfirmBookView: View {
             overrideTitle: title.trimmingCharacters(in: .whitespaces),
             overrideAuthor: author.trimmingCharacters(in: .whitespaces),
             overridePages: Int(pages),
-            overrideIsKorean: isKorean,
+            overrideLanguage: language.trimmingCharacters(in: .whitespaces),
+            overridePublisher: publisher.trimmingCharacters(in: .whitespaces),
             dateRead: dateRead
         )
         dismiss()

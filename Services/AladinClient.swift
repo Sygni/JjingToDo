@@ -77,7 +77,8 @@ struct AladinClient {
                 authors: (cleanAuthor?.isEmpty == false) ? [cleanAuthor!] : [],
                 pageCount: pages,
                 languageCode: nil,
-                coverURL: coverBig.flatMap { URL(string: $0.replacingOccurrences(of: "http://", with: "https://")) }
+                coverURL: coverBig.flatMap { URL(string: $0.replacingOccurrences(of: "http://", with: "https://")) },
+                publisher: publisher?.trimmingCharacters(in: .whitespaces)
             )
         }
     }

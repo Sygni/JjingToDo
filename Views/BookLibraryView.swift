@@ -194,9 +194,13 @@ struct BookDetailView: View {
                     }
 
                     VStack(spacing: 0) {
+                        if let pub = book.publisher, !pub.isEmpty {
+                            infoRow(label: "출판사", value: pub)
+                            Divider().padding(.leading, 16)
+                        }
                         infoRow(label: "페이지", value: "\(max(1, Int(book.pages)))쪽")
                         Divider().padding(.leading, 16)
-                        infoRow(label: "언어", value: book.isKorean ? "한국어" : "외국어")
+                        infoRow(label: "언어", value: book.language ?? (book.isKorean ? "한국어" : "외국어"))
                         Divider().padding(.leading, 16)
                         infoRow(label: "읽은 날짜", value: dateText)
                     }

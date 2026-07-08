@@ -11,8 +11,9 @@ struct AddBookManualView: View {
 
     @State private var title: String = ""
     @State private var author: String = ""
+    @State private var publisher: String = ""
     @State private var pageText: String = ""
-    @State private var isKorean: Bool = true
+    @State private var language: String = "한국어"
     @State private var coverURLString: String = ""
     @State private var showAlert = false
     @State private var alertMsg = ""
@@ -23,8 +24,11 @@ struct AddBookManualView: View {
                 Section("기본 정보") {
                     TextField("제목(필수)", text: $title).textInputAutocapitalization(.sentences)
                     TextField("저자", text: $author)
+                    TextField("출판사", text: $publisher)
                     TextField("페이지 수(필수, 숫자)", text: $pageText).keyboardType(.numberPad)
-                    Toggle("한국어 책", isOn: $isKorean)
+                }
+                Section("언어") {
+                    LanguagePickerField(language: $language)
                 }
                 CoverPickerSection(
                     coverURLString: $coverURLString,
@@ -48,7 +52,11 @@ struct AddBookManualView: View {
         guard !trimmedTitle.isEmpty else { alertMsg = "제목을 입력해 주세요."; showAlert = true; return }
         guard let pages = Int(pageText), pages > 0 else { alertMsg = "페이지 수를 올바르게 입력해 주세요."; showAlert = true; return }
         do {
-            let book = try vm.addManualBook(title: trimmedTitle, author: author.trimmingCharacters(in: .whitespacesAndNewlines), pages: pages, isKorean: isKorean)
+            let book = try vm.addManualBook(title: trimmedTitle,
+                                            author: author.trimmingCharacters(in: .whitespacesAndNewlines),
+                                            pages: pages,
+                                            language: language.trimmingCharacters(in: .whitespaces),
+                                            publisher: publisher.trimmingCharacters(in: .whitespaces))
             let trimmedCover = coverURLString.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmedCover.isEmpty {
                 book.coverURL = trimmedCover

@@ -89,8 +89,10 @@ final class BookSearchViewModel: ObservableObject {
         book.pages = Int32(s.pageCount ?? 0)
         book.dateRead = dateRead
         book.coverURL = s.coverURL?.absoluteString
-        let lang = s.languageCode?.lowercased()
-        book.isKorean = (lang == "ko") || s.title.contains { $0 >= "가" && $0 <= "힣" }
+        book.publisher = s.publisher
+        let language = BookLanguage.infer(code: s.languageCode, title: s.title)
+        book.language = language
+        book.isKorean = (language == "한국어")
 
         do {
             try context.save()
@@ -103,15 +105,16 @@ final class BookSearchViewModel: ObservableObject {
                       overrideTitle: String?,
                       overrideAuthor: String?,
                       overridePages: Int?,
-                      overrideIsKorean: Bool?,
+                      overrideLanguage: String?,
+                      overridePublisher: String?,
                       dateRead: Date) {
         let finalTitle = overrideTitle?.isEmpty == false ? overrideTitle! : s.title
         let finalAuthor = overrideAuthor?.isEmpty == false ? overrideAuthor! : (s.authors.first ?? "")
         let finalPages = overridePages ?? s.pageCount ?? 0
-        let finalIsKorean: Bool = overrideIsKorean ?? {
-            let lang = s.languageCode?.lowercased()
-            return (lang == "ko") || s.title.contains { $0 >= "가" && $0 <= "힣" }
-        }()
+        let finalLanguage = overrideLanguage?.isEmpty == false
+            ? overrideLanguage!
+            : BookLanguage.infer(code: s.languageCode, title: s.title)
+        let finalPublisher = overridePublisher?.isEmpty == false ? overridePublisher! : s.publisher
 
         let key = Self.key(title: finalTitle, author: finalAuthor)
         if currentSavedKeys().contains(key) { addedIDs.insert(key); return }
@@ -121,7 +124,9 @@ final class BookSearchViewModel: ObservableObject {
         book.title = finalTitle
         book.author = finalAuthor
         book.pages = Int32(finalPages)
-        book.isKorean = finalIsKorean
+        book.language = finalLanguage
+        book.isKorean = (finalLanguage == "한국어")
+        book.publisher = finalPublisher
         book.dateRead = dateRead
         book.coverURL = s.coverURL?.absoluteString
 
@@ -154,18 +159,22 @@ final class BookSearchViewModel: ObservableObject {
 // MARK: - Manual Add
 extension BookSearchViewModel {
     @discardableResult
-    func addManualBook(title: String, author: String, pages: Int, isKorean: Bool, dateRead: Date = Date()) throws -> Book {
+    func addManualBook(title: String, author: String, pages: Int, language: String = "한국어",
+                       publisher: String = "", dateRead: Date = Date()) throws -> Book {
         let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty else { throw ManualAddError.invalidTitle }
         let key = Self.key(title: t, author: author)
         if currentSavedKeys().contains(key) { addedIDs.insert(key); throw ManualAddError.duplicate }
 
+        let lang = language.trimmingCharacters(in: .whitespaces).isEmpty ? "한국어" : language
         let book = Book(context: context)
         book.id = UUID()
         book.title = t
         book.author = author
         book.pages = Int32(max(1, pages))
-        book.isKorean = isKorean
+        book.language = lang
+        book.isKorean = (lang == "한국어")
+        book.publisher = publisher.isEmpty ? nil : publisher
         book.dateRead = dateRead
         try context.save()
         context.processPendingChanges()
@@ -187,13 +196,17 @@ extension BookSearchViewModel {
 
 // MARK: - Edit / Delete
 extension BookSearchViewModel {
-    func update(book: Book, title: String, author: String, pages: Int, isKorean: Bool, dateRead: Date?) throws {
+    func update(book: Book, title: String, author: String, pages: Int, language: String,
+                publisher: String, dateRead: Date?) throws {
         let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty else { throw EditError.invalidTitle }
+        let lang = language.trimmingCharacters(in: .whitespaces).isEmpty ? "한국어" : language
         book.title = t
         book.author = author
         book.pages = Int32(max(1, pages))
-        book.isKorean = isKorean
+        book.language = lang
+        book.isKorean = (lang == "한국어")
+        book.publisher = publisher.isEmpty ? nil : publisher
         book.dateRead = dateRead
         try context.save()
         context.processPendingChanges()

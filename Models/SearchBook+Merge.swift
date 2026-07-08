@@ -34,6 +34,8 @@ extension Array where Element == SearchBook {
             .sorted { $0.absoluteString.count > $1.absoluteString.count }
             .first ?? first.coverURL
 
-        return SearchBook(id: first.id, title: title, authors: authors, pageCount: pages, languageCode: lang, coverURL: cover)
+        let publisher = self.compactMap(\.publisher).first { !$0.isEmpty } ?? first.publisher
+
+        return SearchBook(id: first.id, title: title, authors: authors, pageCount: pages, languageCode: lang, coverURL: cover, publisher: publisher)
     }
 }

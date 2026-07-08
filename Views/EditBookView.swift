@@ -5,6 +5,35 @@
 
 import SwiftUI
 
+// MARK: - 언어 선택 필드 (편집/수동등록/확인 공용)
+// 기본 언어(한국어/영어/일본어)는 세그먼트로, 그 외는 '기타' 선택 후 직접 입력
+struct LanguagePickerField: View {
+    @Binding var language: String
+
+    private var isPreset: Bool { BookLanguage.presets.contains(language) }
+
+    var body: some View {
+        Picker("언어", selection: Binding(
+            get: { isPreset ? language : "기타" },
+            set: { newVal in
+                if newVal == "기타" {
+                    if isPreset { language = "" }
+                } else {
+                    language = newVal
+                }
+            }
+        )) {
+            ForEach(BookLanguage.presets, id: \.self) { Text($0).tag($0) }
+            Text("기타").tag("기타")
+        }
+        .pickerStyle(.segmented)
+
+        if !isPreset {
+            TextField("언어 직접 입력 (예: 프랑스어)", text: $language)
+        }
+    }
+}
+
 // MARK: - 표지 선택 섹션 (편집/수동등록 공용)
 struct CoverPickerSection: View {
     @Binding var coverURLString: String
@@ -130,8 +159,9 @@ struct EditBookView: View {
 
     @State private var title: String = ""
     @State private var author: String = ""
+    @State private var publisher: String = ""
     @State private var pageText: String = ""
-    @State private var isKorean: Bool = true
+    @State private var language: String = "한국어"
     @State private var hasDate: Bool = true
     @State private var dateRead: Date = Date()
     @State private var coverURLString: String = ""
@@ -144,8 +174,11 @@ struct EditBookView: View {
                 Section("기본 정보") {
                     TextField("제목(필수)", text: $title).textInputAutocapitalization(.sentences)
                     TextField("저자", text: $author)
+                    TextField("출판사", text: $publisher)
                     TextField("페이지 수(필수, 숫자)", text: $pageText).keyboardType(.numberPad)
-                    Toggle("한국어 책", isOn: $isKorean)
+                }
+                Section("언어") {
+                    LanguagePickerField(language: $language)
                 }
                 CoverPickerSection(
                     coverURLString: $coverURLString,
@@ -176,8 +209,9 @@ struct EditBookView: View {
     private func load() {
         title = book.title ?? ""
         author = book.author ?? ""
+        publisher = book.publisher ?? ""
         pageText = String(max(1, Int(book.pages)))
-        isKorean = book.isKorean
+        language = book.language ?? (book.isKorean ? "한국어" : "영어")
         coverURLString = book.coverURL ?? ""
         if let d = book.dateRead { hasDate = true; dateRead = d }
         else { hasDate = false; dateRead = Date() }
@@ -192,7 +226,10 @@ struct EditBookView: View {
             book.coverURL = trimmedCover.isEmpty ? nil : trimmedCover
             try vm.update(book: book, title: trimmedTitle,
                           author: author.trimmingCharacters(in: .whitespacesAndNewlines),
-                          pages: pages, isKorean: isKorean, dateRead: hasDate ? dateRead : nil)
+                          pages: pages,
+                          language: language.trimmingCharacters(in: .whitespaces),
+                          publisher: publisher.trimmingCharacters(in: .whitespaces),
+                          dateRead: hasDate ? dateRead : nil)
             dismiss()
         } catch { alertMsg = error.localizedDescription; showAlert = true }
     }

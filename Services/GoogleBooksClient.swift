@@ -17,6 +17,7 @@ private struct GBVolume: Decodable {
     let authors: [String]?
     let pageCount: Int?
     let language: String?
+    let publisher: String?
     let imageLinks: GBImageLinks?
 }
 private struct GBImageLinks: Decodable {
@@ -69,7 +70,8 @@ struct GoogleBooksClient: BookSearchService {
                 authors: v.authors ?? [],
                 pageCount: v.pageCount,
                 languageCode: v.language,
-                coverURL: thumb.flatMap { URL(string: $0.replacingOccurrences(of: "http://", with: "https://")) }
+                coverURL: thumb.flatMap { URL(string: $0.replacingOccurrences(of: "http://", with: "https://")) },
+                publisher: v.publisher
             )
         }
     }
