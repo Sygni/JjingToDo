@@ -78,7 +78,8 @@ struct AladinClient {
                 pageCount: pages,
                 languageCode: nil,
                 coverURL: coverBig.flatMap { URL(string: $0.replacingOccurrences(of: "http://", with: "https://")) },
-                publisher: publisher?.trimmingCharacters(in: .whitespaces)
+                publisher: publisher?.trimmingCharacters(in: .whitespaces),
+                isbn: isbn13
             )
         }
     }

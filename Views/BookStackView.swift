@@ -81,13 +81,12 @@ enum CoverImageStore {
     // MARK: 교보문고 실제 책등 이미지
     // addt/{isbn13}_0N.jpg 후보들 중 "흰 배경 + 좁고 긴 세로 띠" 이미지를 판별해 띠만 크롭
 
+    // dir을 거쳐야 BookCovers 폴더 생성이 보장됨 (직접 경로 조립 시 저장이 조용히 실패)
     private static func spineFile(isbn: String) -> URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("BookCovers/spine_\(isbn).png")
+        dir.appendingPathComponent("spine_\(isbn).png")
     }
     private static func spineMissMarker(isbn: String) -> URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("BookCovers/spine_\(isbn).none")
+        dir.appendingPathComponent("spine_\(isbn).none")
     }
 
     /// 교보 실제 책등 원본 (세로 방향, 크롭된 상태). 없으면 nil + 재시도 안 함 마커.

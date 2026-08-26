@@ -13,6 +13,7 @@ struct SearchBook: Identifiable, Hashable {
     var languageCode: String?
     var coverURL: URL? = nil
     var publisher: String? = nil
+    var isbn: String? = nil
 }
 
 protocol BookSearchService {

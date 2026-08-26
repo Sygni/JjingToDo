@@ -78,7 +78,7 @@ final class BookSearchViewModel: ObservableObject {
         book.dateRead = dateRead
         book.coverURL = s.coverURL?.absoluteString
         book.publisher = s.publisher
-        book.isbn = Self.isbn13(from: s.id)
+        book.isbn = Self.isbn13(of: s)
         let language = BookLanguage.infer(code: s.languageCode, title: s.title)
         book.language = language
         book.isKorean = (language == "한국어")
@@ -118,7 +118,7 @@ final class BookSearchViewModel: ObservableObject {
         book.publisher = finalPublisher
         book.dateRead = dateRead
         book.coverURL = s.coverURL?.absoluteString
-        book.isbn = Self.isbn13(from: s.id)
+        book.isbn = Self.isbn13(of: s)
 
         do {
             try context.save()
@@ -145,10 +145,11 @@ final class BookSearchViewModel: ObservableObject {
         "\(title.lowercased().trimmingCharacters(in: .whitespaces))|\(author.lowercased())"
     }
 
-    /// SearchBook.id가 ISBN13이면 반환 (알라딘 결과는 id가 isbn13)
-    static func isbn13(from id: String) -> String? {
-        let digits = id.filter(\.isNumber)
-        return (digits.count == 13 && id.allSatisfy(\.isNumber)) ? digits : nil
+    /// 검색 결과에서 ISBN13 추출 — isbn 필드 우선, 없으면 id가 ISBN13인 경우(알라딘)
+    static func isbn13(of book: SearchBook) -> String? {
+        if let s = book.isbn?.filter(\.isNumber), s.count == 13 { return s }
+        let digits = book.id.filter(\.isNumber)
+        return (digits.count == 13 && book.id.allSatisfy(\.isNumber)) ? digits : nil
     }
 }
 

@@ -166,7 +166,7 @@ struct DebugToolView: View {
                 var updated = false
                 // ISBN은 알라딘 결과(id=ISBN13)에서
                 if (book.isbn ?? "").isEmpty,
-                   let withISBN = matched.compactMap({ BookSearchViewModel.isbn13(from: $0.id) }).first {
+                   let withISBN = matched.compactMap({ BookSearchViewModel.isbn13(of: $0) }).first {
                     book.isbn = withISBN
                     updated = true
                 }
@@ -183,7 +183,7 @@ struct DebugToolView: View {
             }
 
             try? viewContext.save()
-            backfillStatus = "완료: \(found)/\(targets.count)권 표지 저장됨"
+            backfillStatus = "완료: \(targets.count)권 중 \(found)권 채움 (제목이 일치하지 않으면 건너뜁니다)"
             isBackfillingCovers = false
             refreshTrigger = UUID()
         }

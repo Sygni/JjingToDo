@@ -168,7 +168,7 @@ struct CoverPickerSection: View {
 
     private func candidateCell(_ cand: SearchBook) -> some View {
         let candURL = cand.coverURL?.absoluteString ?? ""
-        let candISBN = BookSearchViewModel.isbn13(from: cand.id) ?? ""
+        let candISBN = BookSearchViewModel.isbn13(of: cand) ?? ""
         let selected = !candURL.isEmpty && coverURLString == candURL
         return Button {
             coverURLString = candURL

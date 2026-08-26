@@ -90,10 +90,9 @@ struct ConfirmBookView: View {
     /// 목록 검색(ItemSearch)엔 쪽수·표지가 빠지는 경우가 많아
     /// ISBN 개별 조회(ItemLookUp + 구글/OpenLibrary)로 빈 필드를 채움
     private func enrichIfNeeded() async {
-        let isbn = candidate.id.filter(\.isNumber)
         let missingSomething = candidate.pageCount == nil || candidate.coverURL == nil
             || (candidate.publisher ?? "").isEmpty
-        guard missingSomething, isbn.count == 13 else { return }
+        guard missingSomething, let isbn = BookSearchViewModel.isbn13(of: candidate) else { return }
 
         isEnriching = true
         defer { isEnriching = false }

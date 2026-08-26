@@ -77,6 +77,7 @@ struct MultiSourceSearchService: BookSearchService {
                 if base.languageCode == nil, let lang = o.languageCode { base.languageCode = lang }
                 if base.coverURL == nil, let cover = o.coverURL { base.coverURL = cover }
                 if base.publisher?.isEmpty != false, let pub = o.publisher { base.publisher = pub }
+                if base.isbn?.isEmpty != false, let isbn = o.isbn { base.isbn = isbn }
                 dict[mk] = base
             } else {
                 if dict[k] == nil { order.append(k) }
