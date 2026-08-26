@@ -102,19 +102,24 @@ enum CoverImageStore {
         }
         if FileManager.default.fileExists(atPath: spineMissMarker(isbn: isbn).path) { return nil }
 
+        var receivedAnyImage = false
         for n in 1...4 {
             let urlStr = "https://contents.kyobobook.co.kr/sih/fit-in/720x0/pdt/addt/\(isbn)_0\(n).jpg"
             guard let url = URL(string: urlStr),
                   let (data, resp) = try? await URLSession.shared.data(from: url),
                   (resp as? HTTPURLResponse)?.statusCode == 200,
                   let img = UIImage(data: data) else { continue }
+            receivedAnyImage = true
             if let spine = Self.cropSpineStrip(img) {
                 if let png = spine.pngData() { try? png.write(to: file, options: .atomic) }
                 memCache.setObject(spine, forKey: key)
                 return spine
             }
         }
-        try? Data().write(to: spineMissMarker(isbn: isbn))
+        // 네트워크 실패로 이미지를 하나도 못 받았으면 마커를 남기지 않음 (다음에 재시도)
+        if receivedAnyImage {
+            try? Data().write(to: spineMissMarker(isbn: isbn))
+        }
         return nil
     }
 

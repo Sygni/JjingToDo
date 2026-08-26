@@ -109,6 +109,13 @@ struct CoverPickerSection: View {
                 .autocorrectionDisabled()
                 .keyboardType(.URL)
                 .font(.footnote)
+
+            HStack {
+                Text("ISBN13").font(.footnote).foregroundStyle(.secondary)
+                TextField("책등 조회용 (예: 9791169087216)", text: $isbn)
+                    .keyboardType(.numberPad)
+                    .font(.footnote)
+            }
         }
         .task(id: isbn) { await loadSpine(force: false) }
     }
