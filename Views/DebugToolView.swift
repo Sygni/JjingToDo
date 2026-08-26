@@ -150,20 +150,33 @@ struct DebugToolView: View {
                 let title = (book.title ?? "").trimmingCharacters(in: .whitespaces)
                 let results = (try? await service.search(query: title)) ?? []
 
-                let lowTitle = title.lowercased()
-                // 제목이 정확히 일치하는 결과 우선, 없으면 표지가 있는 첫 결과
-                let best = results.first { $0.coverURL != nil && $0.title.lowercased() == lowTitle }
-                    ?? results.first { $0.coverURL != nil }
-
-                if let b = best {
-                    if (book.coverURL ?? "").isEmpty, let url = b.coverURL {
-                        book.coverURL = url.absoluteString
-                    }
-                    if (book.isbn ?? "").isEmpty, let isbn = BookSearchViewModel.isbn13(from: b.id) {
-                        book.isbn = isbn
-                    }
-                    found += 1
+                // 정규화 접두 비교로 매칭 (알라딘의 " - 부제" 표기 흡수)
+                // 제목이 안 맞으면 건너뜀 — 엉뚱한 책이 채워지는 것 방지
+                func norm(_ s: String) -> String {
+                    s.lowercased()
+                        .replacingOccurrences(of: #"\([^)]*\)"#, with: "", options: .regularExpression)
+                        .replacingOccurrences(of: #"[\s\-:·,.!?'"“”‘’]"#, with: "", options: .regularExpression)
                 }
+                let target = norm(title)
+                let matched = results.filter {
+                    let n = norm($0.title)
+                    return !target.isEmpty && !n.isEmpty && (n.hasPrefix(target) || target.hasPrefix(n))
+                }
+
+                var updated = false
+                // ISBN은 알라딘 결과(id=ISBN13)에서
+                if (book.isbn ?? "").isEmpty,
+                   let withISBN = matched.compactMap({ BookSearchViewModel.isbn13(from: $0.id) }).first {
+                    book.isbn = withISBN
+                    updated = true
+                }
+                // 표지는 매칭 결과 중 표지 있는 첫 번째에서
+                if (book.coverURL ?? "").isEmpty,
+                   let withCover = matched.first(where: { $0.coverURL != nil })?.coverURL {
+                    book.coverURL = withCover.absoluteString
+                    updated = true
+                }
+                if updated { found += 1 }
 
                 // API 연속 호출 부담 완화
                 try? await _Concurrency.Task.sleep(nanoseconds: 300_000_000)
