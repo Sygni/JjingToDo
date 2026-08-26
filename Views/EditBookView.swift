@@ -53,6 +53,16 @@ struct CoverPickerSection: View {
     @State private var spineChecked = false
     @State private var coverPick: PhotosPickerItem? = nil
     @State private var spinePick: PhotosPickerItem? = nil
+    @State private var cropTarget: CropTarget? = nil
+    /// 이번 편집에서 새로 만든 파일 — 저장 전에는 책에 이미 붙어 있던 파일을 지우면 안 된다
+    @State private var createdFiles: Set<String> = []
+
+    /// 사진을 고른 뒤 크롭 화면에 넘길 대상
+    private struct CropTarget: Identifiable {
+        let id = UUID()
+        let image: UIImage
+        let isSpine: Bool
+    }
 
     /// 실제로 책등에 그려질 이미지 (직접 올린 것 > 교보, 제거했으면 없음)
     private var effectiveSpine: UIImage? {
@@ -78,7 +88,7 @@ struct CoverPickerSection: View {
 
                     if hasCover {
                         Button(role: .destructive) {
-                            UserImageStore.delete(customCoverFile)
+                            discardIfTemporary(customCoverFile)
                             customCoverFile = nil
                             coverURLString = ""
                         } label: {
@@ -134,7 +144,7 @@ struct CoverPickerSection: View {
 
                     if effectiveSpine != nil {
                         Button(role: .destructive) {
-                            UserImageStore.delete(customSpineFile)
+                            discardIfTemporary(customSpineFile)
                             customSpineFile = nil
                             spineHidden = true      // 교보 책등도 쓰지 않음
                         } label: {
@@ -165,6 +175,17 @@ struct CoverPickerSection: View {
             .onChange(of: spinePick) { _, item in
                 guard let item else { return }
                 _Concurrency.Task { await importPhoto(item, asSpine: true) }
+            }
+            .fullScreenCover(item: $cropTarget) { target in
+                ImageCropView(
+                    image: target.image,
+                    isSpine: target.isSpine,
+                    onCancel: { cropTarget = nil },
+                    onDone: { cropped in
+                        saveCropped(cropped, asSpine: target.isSpine)
+                        cropTarget = nil
+                    }
+                )
             }
         }
     }
@@ -242,7 +263,7 @@ struct CoverPickerSection: View {
         let candISBN = BookSearchViewModel.isbn13(of: cand) ?? ""
         let selected = customCoverFile == nil && !candURL.isEmpty && coverURLString == candURL
         return Button {
-            UserImageStore.delete(customCoverFile)
+            discardIfTemporary(customCoverFile)
             customCoverFile = nil
             coverURLString = candURL
             if !candISBN.isEmpty, customSpineFile == nil {
@@ -283,15 +304,29 @@ struct CoverPickerSection: View {
         }
         guard let data = try? await item.loadTransferable(type: Data.self),
               let image = UIImage(data: data) else { return }
+        cropTarget = CropTarget(image: image, isSpine: asSpine)
+    }
+
+    @MainActor
+    private func saveCropped(_ image: UIImage, asSpine: Bool) {
+        let previous = asSpine ? customSpineFile : customCoverFile
+        guard let saved = UserImageStore.save(image, kind: asSpine ? "spine" : "cover") else { return }
+        createdFiles.insert(saved)
+        discardIfTemporary(previous)
 
         if asSpine {
-            UserImageStore.delete(customSpineFile)
-            customSpineFile = UserImageStore.save(image, kind: "spine")
+            customSpineFile = saved
             spineHidden = false
         } else {
-            UserImageStore.delete(customCoverFile)
-            customCoverFile = UserImageStore.save(image, kind: "cover")
+            customCoverFile = saved
         }
+    }
+
+    /// 이번 편집에서 만든 파일일 때만 삭제 (책에 저장돼 있던 파일은 건드리지 않음)
+    private func discardIfTemporary(_ filename: String?) {
+        guard let filename, createdFiles.contains(filename) else { return }
+        UserImageStore.delete(filename)
+        createdFiles.remove(filename)
     }
 
     @MainActor
