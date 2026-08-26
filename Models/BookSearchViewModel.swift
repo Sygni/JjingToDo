@@ -78,6 +78,7 @@ final class BookSearchViewModel: ObservableObject {
         book.dateRead = dateRead
         book.coverURL = s.coverURL?.absoluteString
         book.publisher = s.publisher
+        book.isbn = Self.isbn13(from: s.id)
         let language = BookLanguage.infer(code: s.languageCode, title: s.title)
         book.language = language
         book.isKorean = (language == "한국어")
@@ -117,6 +118,7 @@ final class BookSearchViewModel: ObservableObject {
         book.publisher = finalPublisher
         book.dateRead = dateRead
         book.coverURL = s.coverURL?.absoluteString
+        book.isbn = Self.isbn13(from: s.id)
 
         do {
             try context.save()
@@ -141,6 +143,12 @@ final class BookSearchViewModel: ObservableObject {
 
     private static func key(title: String, author: String) -> String {
         "\(title.lowercased().trimmingCharacters(in: .whitespaces))|\(author.lowercased())"
+    }
+
+    /// SearchBook.id가 ISBN13이면 반환 (알라딘 결과는 id가 isbn13)
+    static func isbn13(from id: String) -> String? {
+        let digits = id.filter(\.isNumber)
+        return (digits.count == 13 && id.allSatisfy(\.isNumber)) ? digits : nil
     }
 }
 

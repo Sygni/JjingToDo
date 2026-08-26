@@ -21,6 +21,7 @@ extension Book {
     @NSManaged public var coverURL: String?
     @NSManaged public var publisher: String?
     @NSManaged public var language: String?
+    @NSManaged public var isbn: String?
 
 }
 

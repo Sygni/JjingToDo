@@ -94,7 +94,7 @@ struct DebugToolView: View {
                         backfillCovers()
                     } label: {
                         HStack {
-                            Text("📕 책 표지 일괄 가져오기")
+                            Text("📕 책 표지·ISBN 일괄 가져오기")
                             if isBackfillingCovers { Spacer(); ProgressView() }
                         }
                     }
@@ -131,10 +131,13 @@ struct DebugToolView: View {
         _Concurrency.Task { @MainActor in
             let req = NSFetchRequest<Book>(entityName: "Book")
             let books = (try? viewContext.fetch(req)) ?? []
-            let targets = books.filter { ($0.coverURL ?? "").isEmpty && !($0.title ?? "").isEmpty }
+            // 표지나 ISBN이 빈 책 모두 대상 (ISBN은 교보 실제 책등 조회에 필요)
+            let targets = books.filter {
+                (($0.coverURL ?? "").isEmpty || ($0.isbn ?? "").isEmpty) && !($0.title ?? "").isEmpty
+            }
 
             guard !targets.isEmpty else {
-                backfillStatus = "표지가 없는 책이 없습니다."
+                backfillStatus = "표지·ISBN이 없는 책이 없습니다."
                 isBackfillingCovers = false
                 return
             }
@@ -152,8 +155,13 @@ struct DebugToolView: View {
                 let best = results.first { $0.coverURL != nil && $0.title.lowercased() == lowTitle }
                     ?? results.first { $0.coverURL != nil }
 
-                if let url = best?.coverURL {
-                    book.coverURL = url.absoluteString
+                if let b = best {
+                    if (book.coverURL ?? "").isEmpty, let url = b.coverURL {
+                        book.coverURL = url.absoluteString
+                    }
+                    if (book.isbn ?? "").isEmpty, let isbn = BookSearchViewModel.isbn13(from: b.id) {
+                        book.isbn = isbn
+                    }
                     found += 1
                 }
 
