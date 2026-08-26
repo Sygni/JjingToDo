@@ -90,16 +90,15 @@ enum CoverImageStore {
             .appendingPathComponent("BookCovers/spine_\(isbn).none")
     }
 
-    /// 교보 실제 책등 (왼쪽 90도 회전 완료 상태로 반환). 없으면 nil + 재시도 안 함 마커.
-    static func kyoboSpine(isbn: String) async -> UIImage? {
-        let key = ("kspine|" + isbn) as NSString
-        if let hit = rotatedCache.object(forKey: key) { return hit }
+    /// 교보 실제 책등 원본 (세로 방향, 크롭된 상태). 없으면 nil + 재시도 안 함 마커.
+    static func kyoboSpineRaw(isbn: String) async -> UIImage? {
+        let key = ("kspineraw|" + isbn) as NSString
+        if let hit = memCache.object(forKey: key) { return hit }
 
         let file = spineFile(isbn: isbn)
         if let saved = UIImage(contentsOfFile: file.path) {
-            let rotated = saved.rotated90CCW()
-            rotatedCache.setObject(rotated, forKey: key)
-            return rotated
+            memCache.setObject(saved, forKey: key)
+            return saved
         }
         if FileManager.default.fileExists(atPath: spineMissMarker(isbn: isbn).path) { return nil }
 
@@ -111,13 +110,30 @@ enum CoverImageStore {
                   let img = UIImage(data: data) else { continue }
             if let spine = Self.cropSpineStrip(img) {
                 if let png = spine.pngData() { try? png.write(to: file, options: .atomic) }
-                let rotated = spine.rotated90CCW()
-                rotatedCache.setObject(rotated, forKey: key)
-                return rotated
+                memCache.setObject(spine, forKey: key)
+                return spine
             }
         }
         try? Data().write(to: spineMissMarker(isbn: isbn))
         return nil
+    }
+
+    /// 교보 실제 책등 (왼쪽 90도 회전 완료 상태로 반환)
+    static func kyoboSpine(isbn: String) async -> UIImage? {
+        let key = ("kspine|" + isbn) as NSString
+        if let hit = rotatedCache.object(forKey: key) { return hit }
+        guard let raw = await kyoboSpineRaw(isbn: isbn) else { return nil }
+        let rotated = raw.rotated90CCW()
+        rotatedCache.setObject(rotated, forKey: key)
+        return rotated
+    }
+
+    /// 책등 캐시 삭제 (재조회 유도 — 잘못 매칭됐거나 다시 시도하고 싶을 때)
+    static func clearSpineCache(isbn: String) {
+        try? FileManager.default.removeItem(at: spineFile(isbn: isbn))
+        try? FileManager.default.removeItem(at: spineMissMarker(isbn: isbn))
+        memCache.removeObject(forKey: ("kspineraw|" + isbn) as NSString)
+        rotatedCache.removeObject(forKey: ("kspine|" + isbn) as NSString)
     }
 
     /// 흰 캔버스 가운데 세로 책등 띠가 있으면 그 부분만 잘라 반환, 아니면 nil
@@ -261,12 +277,9 @@ struct BookStackView: View {
             // 책등 바탕: 실제 책등 > 표지 텍스처 > 테마 그라데이션
             Group {
                 if useCoverTexture, let spine = realSpine {
-                    Color.clear
-                        .overlay(
-                            Image(uiImage: spine)
-                                .resizable()
-                                .scaledToFill()
-                        )
+                    // 실제 책등은 비율 유지 대신 늘려서 채움 (위아래 잘림 방지)
+                    Image(uiImage: spine)
+                        .resizable()
                 } else if textureActive, let img = coverImage {
                     Color.clear
                         .overlay(

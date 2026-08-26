@@ -15,6 +15,7 @@ struct AddBookManualView: View {
     @State private var pageText: String = ""
     @State private var language: String = "한국어"
     @State private var coverURLString: String = ""
+    @State private var isbn: String = ""
     @State private var showAlert = false
     @State private var alertMsg = ""
 
@@ -32,6 +33,7 @@ struct AddBookManualView: View {
                 }
                 CoverPickerSection(
                     coverURLString: $coverURLString,
+                    isbn: $isbn,
                     searchTitle: { title },
                     searchAuthor: { author }
                 )
@@ -58,8 +60,10 @@ struct AddBookManualView: View {
                                             language: language.trimmingCharacters(in: .whitespaces),
                                             publisher: publisher.trimmingCharacters(in: .whitespaces))
             let trimmedCover = coverURLString.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmedCover.isEmpty {
-                book.coverURL = trimmedCover
+            let trimmedISBN = isbn.filter(\.isNumber)
+            if !trimmedCover.isEmpty || trimmedISBN.count == 13 {
+                if !trimmedCover.isEmpty { book.coverURL = trimmedCover }
+                if trimmedISBN.count == 13 { book.isbn = trimmedISBN }
                 try? book.managedObjectContext?.save()
             }
             dismiss()
