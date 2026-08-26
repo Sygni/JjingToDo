@@ -22,6 +22,9 @@ extension Book {
     @NSManaged public var publisher: String?
     @NSManaged public var language: String?
     @NSManaged public var isbn: String?
+    @NSManaged public var customCoverFile: String?
+    @NSManaged public var customSpineFile: String?
+    @NSManaged public var spineHidden: Bool
 
 }
 

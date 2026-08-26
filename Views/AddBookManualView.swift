@@ -16,6 +16,9 @@ struct AddBookManualView: View {
     @State private var language: String = "한국어"
     @State private var coverURLString: String = ""
     @State private var isbn: String = ""
+    @State private var customCoverFile: String? = nil
+    @State private var customSpineFile: String? = nil
+    @State private var spineHidden: Bool = false
     @State private var showAlert = false
     @State private var alertMsg = ""
 
@@ -34,19 +37,29 @@ struct AddBookManualView: View {
                 CoverPickerSection(
                     coverURLString: $coverURLString,
                     isbn: $isbn,
+                    customCoverFile: $customCoverFile,
+                    customSpineFile: $customSpineFile,
+                    spineHidden: $spineHidden,
                     searchTitle: { title },
                     searchAuthor: { author }
                 )
             }
             .navigationTitle("수동 등록")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("취소") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("취소") { cancel() } }
                 ToolbarItem(placement: .confirmationAction) { Button("저장") { save() }.bold() }
             }
             .alert("저장 실패", isPresented: $showAlert) {
                 Button("확인", role: .cancel) {}
             } message: { Text(alertMsg) }
         }
+    }
+
+    /// 취소 시 올려둔 사진 파일은 남기지 않는다
+    private func cancel() {
+        UserImageStore.delete(customCoverFile)
+        UserImageStore.delete(customSpineFile)
+        dismiss()
     }
 
     private func save() {
@@ -61,11 +74,12 @@ struct AddBookManualView: View {
                                             publisher: publisher.trimmingCharacters(in: .whitespaces))
             let trimmedCover = coverURLString.trimmingCharacters(in: .whitespacesAndNewlines)
             let trimmedISBN = isbn.filter(\.isNumber)
-            if !trimmedCover.isEmpty || trimmedISBN.count == 13 {
-                if !trimmedCover.isEmpty { book.coverURL = trimmedCover }
-                if trimmedISBN.count == 13 { book.isbn = trimmedISBN }
-                try? book.managedObjectContext?.save()
-            }
+            if !trimmedCover.isEmpty { book.coverURL = trimmedCover }
+            if trimmedISBN.count == 13 { book.isbn = trimmedISBN }
+            book.customCoverFile = customCoverFile
+            book.customSpineFile = customSpineFile
+            book.spineHidden = spineHidden
+            try? book.managedObjectContext?.save()
             dismiss()
         } catch {
             alertMsg = error.localizedDescription

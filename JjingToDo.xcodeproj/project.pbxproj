@@ -16,6 +16,7 @@
 		349E5EFEC4DA4FFC9039045F /* ConfirmBookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D8CC3A97B743AEA3CF6F14 /* ConfirmBookView.swift */; };
 		38C83867E8D8410693700F21 /* BookTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F717E2FACB4574A4A07192 /* BookTheme.swift */; };
 		3B3E70DE2D9C05E900A18A90 /* CSVManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B3E70DD2D9C05E400A18A90 /* CSVManager.swift */; };
+		CC00200200000000USRIMG02 /* UserImageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00200100000000USRIMG01 /* UserImageStore.swift */; };
 		3B5C5DAC2DB67C240017B597 /* ChugumiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5C5DAB2DB67C220017B597 /* ChugumiManager.swift */; };
 		3B5C5DAF2DB67C540017B597 /* ChugumiActionEntity+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5C5DAD2DB67C540017B597 /* ChugumiActionEntity+CoreDataClass.swift */; };
 		3B5C5DB02DB67C540017B597 /* ChugumiActionEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5C5DAE2DB67C540017B597 /* ChugumiActionEntity+CoreDataProperties.swift */; };
@@ -111,6 +112,7 @@
 		3B160FC92D993826003F525D /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		3B160FCB2D993826003F525D /* UserNotificationsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotificationsUI.framework; path = System/Library/Frameworks/UserNotificationsUI.framework; sourceTree = SDKROOT; };
 		3B3E70DD2D9C05E400A18A90 /* CSVManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVManager.swift; sourceTree = "<group>"; };
+		CC00200100000000USRIMG01 /* UserImageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserImageStore.swift; sourceTree = "<group>"; };
 		3B5C5DAB2DB67C220017B597 /* ChugumiManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChugumiManager.swift; sourceTree = "<group>"; };
 		3B5C5DAD2DB67C540017B597 /* ChugumiActionEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChugumiActionEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
 		3B5C5DAE2DB67C540017B597 /* ChugumiActionEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChugumiActionEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
@@ -170,6 +172,7 @@
 		93836877E3144821B598F79C /* DataModel 8.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "DataModel 8.xcdatamodel"; sourceTree = "<group>"; };
 		93836878E3144821B598F79D /* DataModel 9.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "DataModel 9.xcdatamodel"; sourceTree = "<group>"; };
 		93836879E3144821B598F79E /* DataModel 10.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "DataModel 10.xcdatamodel"; sourceTree = "<group>"; };
+		9383687AE3144821B598F79F /* DataModel 11.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "DataModel 11.xcdatamodel"; sourceTree = "<group>"; };
 		AA00BB112D9931D9008BCDE0 /* PointGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointGuideView.swift; sourceTree = "<group>"; };
 		AA00CC102D9931D9008BCDE0 /* RewardEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RewardEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
 		AA00CC132D9931D9008BCDE0 /* RewardEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RewardEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
@@ -299,6 +302,7 @@
 				3B5C5DAB2DB67C220017B597 /* ChugumiManager.swift */,
 				3BD27DF22DB543C60077BE02 /* TodayQueueManager.swift */,
 				3B3E70DD2D9C05E400A18A90 /* CSVManager.swift */,
+				CC00200100000000USRIMG01 /* UserImageStore.swift */,
 				3BF6A9E42D9931D9008BCDE0 /* Persistence.swift */,
 			);
 			path = Managers;
@@ -549,6 +553,7 @@
 				AA00CC112D9931D9008BCDE0 /* RewardEntity+CoreDataClass.swift in Sources */,
 				AA00CC122D9931D9008BCDE0 /* RewardEntity+CoreDataProperties.swift in Sources */,
 				3B3E70DE2D9C05E900A18A90 /* CSVManager.swift in Sources */,
+				CC00200200000000USRIMG02 /* UserImageStore.swift in Sources */,
 				3BF6AA202D993638008BCDE0 /* Preview.swift in Sources */,
 				3BF6AA042D9931D9008BCDE0 /* JjingToDoApp.swift in Sources */,
 				3B5C5DAC2DB67C240017B597 /* ChugumiManager.swift in Sources */,
@@ -912,8 +917,9 @@
 				93836877E3144821B598F79C /* DataModel 8.xcdatamodel */,
 				93836878E3144821B598F79D /* DataModel 9.xcdatamodel */,
 				93836879E3144821B598F79E /* DataModel 10.xcdatamodel */,
+				9383687AE3144821B598F79F /* DataModel 11.xcdatamodel */,
 			);
-			currentVersion = 93836879E3144821B598F79E /* DataModel 10.xcdatamodel */;
+			currentVersion = 9383687AE3144821B598F79F /* DataModel 11.xcdatamodel */;
 			path = DataModel.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

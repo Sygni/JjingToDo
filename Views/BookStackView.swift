@@ -360,17 +360,37 @@ struct BookStackView: View {
         .contentShape(Rectangle())
         .shadow(color: .black.opacity(0.07), radius: 3, x: 0, y: 2)
         .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Color.black.opacity(0.05), lineWidth: 0.8))
-        .task(id: "\(book.isbn ?? "")|\(book.coverURL ?? "")|\(useCoverTexture)") {
+        .task(id: spineTaskID) {
+            realSpine = nil
+            coverImage = nil
+            coverDominant = nil
             guard useCoverTexture else { return }
-            // 1순위: 교보 실제 책등
-            if let isbn = book.isbn, isbn.count == 13 {
+
+            // 1순위: 사용자가 직접 올린 책등
+            if let custom = UserImageStore.image(named: book.customSpineFile) {
+                realSpine = custom.rotated90CCW()
+                return
+            }
+            // 2순위: 교보 실제 책등 (사용자가 제거했으면 건너뜀)
+            if !book.spineHidden, let isbn = book.isbn, isbn.count == 13 {
                 realSpine = await CoverImageStore.kyoboSpine(isbn: isbn)
                 if realSpine != nil { return }
             }
-            // 2순위: 표지 텍스처
+            // 3순위: 표지 텍스처 (직접 올린 표지 우선)
+            if let customCover = UserImageStore.image(named: book.customCoverFile) {
+                coverImage = customCover.rotated90CCW()
+                coverDominant = CoverColorExtractor.dominantColor(of: customCover)
+                return
+            }
             guard let s = book.coverURL, !s.isEmpty else { return }
             coverImage = await CoverImageStore.spineImage(for: s)
             coverDominant = await CoverColorExtractor.dominantColor(from: s)
         }
+    }
+
+    private var spineTaskID: String {
+        [book.customSpineFile ?? "", book.customCoverFile ?? "",
+         book.isbn ?? "", book.coverURL ?? "",
+         String(book.spineHidden), String(useCoverTexture)].joined(separator: "|")
     }
 }

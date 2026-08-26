@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 // MARK: - 언어 선택 필드 (편집/수동등록/확인 공용)
 // 기본 언어(한국어/영어/일본어)는 세그먼트로, 그 외는 '기타' 선택 후 직접 입력
@@ -35,24 +36,34 @@ struct LanguagePickerField: View {
 }
 
 // MARK: - 표지·책등 선택 섹션 (편집/수동등록 공용)
-// 후보를 선택하면 표지 URL과 ISBN이 함께 바뀌어 교보 책등도 그 책 기준으로 갱신됨
+// 표지와 책등을 각각 따로 지정·제거할 수 있고, 직접 사진을 올릴 수도 있다.
 struct CoverPickerSection: View {
     @Binding var coverURLString: String
     @Binding var isbn: String
+    @Binding var customCoverFile: String?
+    @Binding var customSpineFile: String?
+    @Binding var spineHidden: Bool
     let searchTitle: () -> String
     let searchAuthor: () -> String
 
     @State private var candidates: [SearchBook] = []
     @State private var isSearching = false
     @State private var didSearch = false
-    @State private var spinePreview: UIImage? = nil
+    @State private var kyoboSpine: UIImage? = nil
     @State private var spineChecked = false
+    @State private var coverPick: PhotosPickerItem? = nil
+    @State private var spinePick: PhotosPickerItem? = nil
+
+    /// 실제로 책등에 그려질 이미지 (직접 올린 것 > 교보, 제거했으면 없음)
+    private var effectiveSpine: UIImage? {
+        if let custom = UserImageStore.image(named: customSpineFile) { return custom }
+        return spineHidden ? nil : kyoboSpine
+    }
 
     var body: some View {
-        Section("표지 · 책등") {
+        Section("표지") {
             HStack(alignment: .top, spacing: 14) {
                 coverPreviewView
-                spinePreviewView
                 VStack(alignment: .leading, spacing: 10) {
                     Button {
                         _Concurrency.Task { await searchCovers() }
@@ -61,17 +72,14 @@ struct CoverPickerSection: View {
                     }
                     .disabled(isSearching || searchTitle().trimmingCharacters(in: .whitespaces).isEmpty)
 
-                    if isbn.count == 13 {
-                        Button {
-                            CoverImageStore.clearSpineCache(isbn: isbn)
-                            _Concurrency.Task { await loadSpine(force: true) }
-                        } label: {
-                            Label("책등 다시 확인", systemImage: "arrow.clockwise")
-                        }
+                    PhotosPicker(selection: $coverPick, matching: .images) {
+                        Label("사진에서 고르기", systemImage: "photo")
                     }
 
-                    if !coverURLString.isEmpty {
+                    if hasCover {
                         Button(role: .destructive) {
+                            UserImageStore.delete(customCoverFile)
+                            customCoverFile = nil
                             coverURLString = ""
                         } label: {
                             Label("표지 제거", systemImage: "trash")
@@ -83,13 +91,8 @@ struct CoverPickerSection: View {
             }
             .padding(.vertical, 4)
 
-            if spineChecked && spinePreview == nil && isbn.count == 13 {
-                Text("이 책은 교보에 책등 이미지가 없어요. 책등은 표지 색으로 그려집니다.")
-                    .font(.footnote).foregroundStyle(.secondary)
-            }
-
             if didSearch && !isSearching && candidates.isEmpty {
-                Text("검색 결과가 없어요. URL을 직접 입력할 수 있어요.")
+                Text("검색 결과가 없어요. 사진에서 직접 고르거나 URL을 입력할 수 있어요.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
 
@@ -109,6 +112,43 @@ struct CoverPickerSection: View {
                 .autocorrectionDisabled()
                 .keyboardType(.URL)
                 .font(.footnote)
+        }
+
+        Section("책등") {
+            HStack(alignment: .top, spacing: 14) {
+                spinePreviewView
+                VStack(alignment: .leading, spacing: 10) {
+                    PhotosPicker(selection: $spinePick, matching: .images) {
+                        Label("사진에서 고르기", systemImage: "photo")
+                    }
+
+                    if customSpineFile == nil && isbn.count == 13 {
+                        Button {
+                            spineHidden = false
+                            CoverImageStore.clearSpineCache(isbn: isbn)
+                            _Concurrency.Task { await loadKyoboSpine() }
+                        } label: {
+                            Label("교보에서 다시 찾기", systemImage: "arrow.clockwise")
+                        }
+                    }
+
+                    if effectiveSpine != nil {
+                        Button(role: .destructive) {
+                            UserImageStore.delete(customSpineFile)
+                            customSpineFile = nil
+                            spineHidden = true      // 교보 책등도 쓰지 않음
+                        } label: {
+                            Label("책등 제거", systemImage: "trash")
+                        }
+                    }
+                }
+                .buttonStyle(.borderless)
+                Spacer()
+            }
+            .padding(.vertical, 4)
+
+            Text(spineStatusText)
+                .font(.footnote).foregroundStyle(.secondary)
 
             HStack {
                 Text("ISBN13").font(.footnote).foregroundStyle(.secondary)
@@ -116,8 +156,30 @@ struct CoverPickerSection: View {
                     .keyboardType(.numberPad)
                     .font(.footnote)
             }
+            // 항상 화면에 있는 행에 부착해야 핸들러가 유지된다
+            .task(id: isbn) { await loadKyoboSpine() }
+            .onChange(of: coverPick) { _, item in
+                guard let item else { return }
+                _Concurrency.Task { await importPhoto(item, asSpine: false) }
+            }
+            .onChange(of: spinePick) { _, item in
+                guard let item else { return }
+                _Concurrency.Task { await importPhoto(item, asSpine: true) }
+            }
         }
-        .task(id: isbn) { await loadSpine(force: false) }
+    }
+
+    private var hasCover: Bool {
+        customCoverFile != nil || !coverURLString.isEmpty
+    }
+
+    private var spineStatusText: String {
+        if customSpineFile != nil { return "직접 올린 책등을 사용합니다." }
+        if spineHidden { return "책등을 사용하지 않습니다 — 표지 색으로 그려집니다." }
+        if !spineChecked { return "책등을 확인하는 중..." }
+        if kyoboSpine != nil { return "교보문고 책등 이미지를 사용합니다." }
+        if isbn.count == 13 { return "교보에 이 책의 책등 이미지가 없어요. 사진을 직접 올릴 수 있어요." }
+        return "ISBN을 입력하면 교보에서 책등을 찾아봅니다."
     }
 
     // MARK: 미리보기
@@ -125,7 +187,12 @@ struct CoverPickerSection: View {
     @ViewBuilder
     private var coverPreviewView: some View {
         VStack(spacing: 3) {
-            if let url = URL(string: coverURLString), !coverURLString.isEmpty {
+            if let custom = UserImageStore.image(named: customCoverFile) {
+                Image(uiImage: custom)
+                    .resizable().scaledToFill()
+                    .frame(width: 60, height: 88)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+            } else if let url = URL(string: coverURLString), !coverURLString.isEmpty {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
@@ -140,14 +207,16 @@ struct CoverPickerSection: View {
                     .frame(width: 60, height: 88)
                     .overlay(Image(systemName: "book.closed").foregroundStyle(.secondary))
             }
-            Text("표지").font(.caption2).foregroundStyle(.secondary)
+            if customCoverFile != nil {
+                Text("직접 올림").font(.caption2).foregroundStyle(.tint)
+            }
         }
     }
 
     @ViewBuilder
     private var spinePreviewView: some View {
         VStack(spacing: 3) {
-            if let spine = spinePreview {
+            if let spine = effectiveSpine {
                 Image(uiImage: spine)
                     .resizable()
                     .scaledToFit()
@@ -158,21 +227,28 @@ struct CoverPickerSection: View {
                     .fill(Color.gray.opacity(0.12))
                     .frame(width: 30, height: 88)
                     .overlay(
-                        Image(systemName: isbn.count == 13 ? "questionmark" : "minus")
+                        Image(systemName: spineHidden ? "minus" : "questionmark")
                             .font(.caption).foregroundStyle(.secondary)
                     )
             }
-            Text("책등").font(.caption2).foregroundStyle(.secondary)
+            if customSpineFile != nil {
+                Text("직접 올림").font(.caption2).foregroundStyle(.tint)
+            }
         }
     }
 
     private func candidateCell(_ cand: SearchBook) -> some View {
         let candURL = cand.coverURL?.absoluteString ?? ""
         let candISBN = BookSearchViewModel.isbn13(of: cand) ?? ""
-        let selected = !candURL.isEmpty && coverURLString == candURL
+        let selected = customCoverFile == nil && !candURL.isEmpty && coverURLString == candURL
         return Button {
+            UserImageStore.delete(customCoverFile)
+            customCoverFile = nil
             coverURLString = candURL
-            isbn = candISBN   // 표지와 함께 ISBN도 갱신 → 책등도 이 책 기준으로
+            if !candISBN.isEmpty, customSpineFile == nil {
+                isbn = candISBN       // 표지와 함께 ISBN도 갱신 → 책등도 이 책 기준으로
+                spineHidden = false
+            }
         } label: {
             VStack(spacing: 4) {
                 AsyncImage(url: cand.coverURL) { phase in
@@ -201,11 +277,29 @@ struct CoverPickerSection: View {
     // MARK: 로직
 
     @MainActor
-    private func loadSpine(force: Bool) async {
-        spinePreview = nil
+    private func importPhoto(_ item: PhotosPickerItem, asSpine: Bool) async {
+        defer {
+            if asSpine { spinePick = nil } else { coverPick = nil }
+        }
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let image = UIImage(data: data) else { return }
+
+        if asSpine {
+            UserImageStore.delete(customSpineFile)
+            customSpineFile = UserImageStore.save(image, kind: "spine")
+            spineHidden = false
+        } else {
+            UserImageStore.delete(customCoverFile)
+            customCoverFile = UserImageStore.save(image, kind: "cover")
+        }
+    }
+
+    @MainActor
+    private func loadKyoboSpine() async {
+        kyoboSpine = nil
         spineChecked = false
         guard isbn.count == 13 else { spineChecked = true; return }
-        spinePreview = await CoverImageStore.kyoboSpineRaw(isbn: isbn)
+        kyoboSpine = await CoverImageStore.kyoboSpineRaw(isbn: isbn)
         spineChecked = true
     }
 
@@ -249,6 +343,9 @@ struct EditBookView: View {
     @State private var dateRead: Date = Date()
     @State private var coverURLString: String = ""
     @State private var isbn: String = ""
+    @State private var customCoverFile: String? = nil
+    @State private var customSpineFile: String? = nil
+    @State private var spineHidden: Bool = false
     @State private var showAlert = false
     @State private var alertMsg = ""
 
@@ -267,6 +364,9 @@ struct EditBookView: View {
                 CoverPickerSection(
                     coverURLString: $coverURLString,
                     isbn: $isbn,
+                    customCoverFile: $customCoverFile,
+                    customSpineFile: $customSpineFile,
+                    spineHidden: $spineHidden,
                     searchTitle: { title },
                     searchAuthor: { author }
                 )
@@ -281,7 +381,7 @@ struct EditBookView: View {
             }
             .navigationTitle("책 정보 수정")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("취소") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("취소") { cancel() } }
                 ToolbarItem(placement: .confirmationAction) { Button("저장") { save() }.bold() }
             }
             .onAppear(perform: load)
@@ -299,8 +399,18 @@ struct EditBookView: View {
         language = book.language ?? (book.isKorean ? "한국어" : "영어")
         coverURLString = book.coverURL ?? ""
         isbn = book.isbn ?? ""
+        customCoverFile = book.customCoverFile
+        customSpineFile = book.customSpineFile
+        spineHidden = book.spineHidden
         if let d = book.dateRead { hasDate = true; dateRead = d }
         else { hasDate = false; dateRead = Date() }
+    }
+
+    /// 취소 시 이번 편집에서 새로 올린 사진 파일은 지운다
+    private func cancel() {
+        if customCoverFile != book.customCoverFile { UserImageStore.delete(customCoverFile) }
+        if customSpineFile != book.customSpineFile { UserImageStore.delete(customSpineFile) }
+        dismiss()
     }
 
     private func save() {
@@ -312,6 +422,12 @@ struct EditBookView: View {
             book.coverURL = trimmedCover.isEmpty ? nil : trimmedCover
             let trimmedISBN = isbn.filter(\.isNumber)
             book.isbn = trimmedISBN.count == 13 ? trimmedISBN : nil
+            // 교체·제거된 기존 사진 파일 정리
+            if book.customCoverFile != customCoverFile { UserImageStore.delete(book.customCoverFile) }
+            if book.customSpineFile != customSpineFile { UserImageStore.delete(book.customSpineFile) }
+            book.customCoverFile = customCoverFile
+            book.customSpineFile = customSpineFile
+            book.spineHidden = spineHidden
             try vm.update(book: book, title: trimmedTitle,
                           author: author.trimmingCharacters(in: .whitespacesAndNewlines),
                           pages: pages,

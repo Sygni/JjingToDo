@@ -128,6 +128,8 @@ struct BookLibraryView: View {
     }
 
     private func delete(_ book: Book) {
+        UserImageStore.delete(book.customCoverFile)
+        UserImageStore.delete(book.customSpineFile)
         viewContext.delete(book)
         do { try viewContext.save() } catch { print("Delete error: \(error)") }
     }
@@ -160,8 +162,15 @@ struct BookDetailView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
-                    // 표지
-                    if let s = book.coverURL, let url = URL(string: s) {
+                    // 표지 — 직접 올린 이미지 우선
+                    if let custom = UserImageStore.image(named: book.customCoverFile) {
+                        Image(uiImage: custom)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 140, height: 200)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 5)
+                    } else if let s = book.coverURL, let url = URL(string: s) {
                         AsyncImage(url: url) { phase in
                             switch phase {
                             case .success(let img): img.resizable().scaledToFill()
