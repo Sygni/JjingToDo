@@ -247,8 +247,11 @@ enum CoverColorExtractor {
 struct BookStackView: View {
     let book: Book
     var tone: CGFloat = 1.0
+    /// 화면에 그려지는 책의 폭 (= 실제 책 높이). 두께를 비율로 계산하는 데 쓰인다.
+    var width: CGFloat = 228
 
     @AppStorage("spineUsesCoverColor") private var useCoverTexture = true
+    @AppStorage("spineAspectBlend") private var aspectBlend: Double = 0.5
     @State private var coverImage: UIImage? = nil
     @State private var coverDominant: UIColor? = nil
     @State private var realSpine: UIImage? = nil   // 교보 실제 책등 (회전 완료)
@@ -256,10 +259,12 @@ struct BookStackView: View {
     var body: some View {
         let isKo = book.isKorean
         let pagesSafe = max(1, Int(book.pages))
-        let hRaw = spineHeight(pages: Int32(pagesSafe), isKorean: isKo, effort: 1.0)
-        let minH = SpineConfig.minH
-        let maxH = SpineConfig.maxH ?? .greatestFiniteMagnitude
-        let h = safeCGFloat(hRaw, min: minH, max: maxH)
+        // 실제 책등 이미지가 있으면 그 두께/높이 비율을 두께 계산에 반영
+        let imageAspect: CGFloat? = realSpine.map { $0.size.height / max($0.size.width, 1) }
+        let hRaw = spineThickness(pages: Int32(pagesSafe), isKorean: isKo,
+                                  bookWidth: width, imageAspect: imageAspect,
+                                  blend: CGFloat(aspectBlend))
+        let h = safeCGFloat(hRaw, min: SpineConfig.minThickness, max: SpineConfig.maxThickness)
 
         let textureActive = useCoverTexture && coverImage != nil
 

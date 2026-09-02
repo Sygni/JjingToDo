@@ -22,6 +22,7 @@ struct DebugToolView: View {
 
     // 독서 탭 — 책등 표지 색
     @AppStorage("spineUsesCoverColor") private var spineUsesCoverColor = true
+    @AppStorage("spineAspectBlend") private var spineAspectBlend: Double = 0.5
     @State private var isBackfillingCovers = false
     @State private var backfillStatus: String? = nil
 
@@ -89,6 +90,20 @@ struct DebugToolView: View {
 
                 Section(header: Text("📚 독서 탭")) {
                     Toggle("책등에 표지 반영", isOn: $spineUsesCoverColor)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("책 두께 기준").font(.subheadline)
+                        Picker("책 두께 기준", selection: $spineAspectBlend) {
+                            Text("쪽수 우선").tag(0.2)
+                            Text("균형").tag(0.5)
+                            Text("실물 비율").tag(0.85)
+                        }
+                        .pickerStyle(.segmented)
+                        Text("실제 책등 이미지가 있는 책에만 적용돼요. 오른쪽으로 갈수록 실물 비율에 가까워지고, 왼쪽일수록 쪽수 차이가 두드러집니다.")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.vertical, 2)
 
                     Button {
                         backfillCovers()

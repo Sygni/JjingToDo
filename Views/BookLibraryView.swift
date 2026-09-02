@@ -29,7 +29,8 @@ struct BookLibraryView: View {
 
                 GeometryReader { proxy in
                         let fullW = proxy.size.width
-                        let bookW = min(fullW * 0.58, 340)
+                        // 실제 책등 비율에 가깝게 — 폭을 넓히면 두께 왜곡이 줄고 제목도 커진다
+                        let bookW = min(fullW * 0.76, 360)
                         let centerBase = (fullW - bookW) / 2
 
                         let listSorted: [Book] = Array(books).sorted { a, b in
@@ -51,7 +52,7 @@ struct BookLibraryView: View {
 
                                     HStack(spacing: 0) {
                                         Spacer().frame(width: max(0, start))
-                                        BookStackView(book: book, tone: tone)
+                                        BookStackView(book: book, tone: tone, width: bookW)
                                             .frame(width: bookW, alignment: .leading)
                                             .contextMenu {
                                                 Button {

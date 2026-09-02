@@ -32,6 +32,42 @@ struct SpineConfig {
     static var maxH: CGFloat? = nil
     static var langMulKO: CGFloat = 1.0
     static var langMulForeign: CGFloat = 1.3
+
+    /// 쪽수 1쪽당 (두께 ÷ 책 높이) 비율.
+    /// 교보 실제 책등 이미지 6권을 실측해 얻은 중앙값 — 1000쪽당 0.299
+    static var thicknessPerPage: CGFloat = 0.000299
+    /// 실제 책등 이미지 비율을 얼마나 반영할지 (0 = 쪽수만, 1 = 이미지 비율만)
+    static var defaultAspectBlend: CGFloat = 0.5
+    static var minThickness: CGFloat = 10
+    static var maxThickness: CGFloat = 95
+}
+
+/// 눕혀 쌓은 책의 두께(=화면상 높이) 계산.
+/// - Parameters:
+///   - bookWidth: 화면에 그려지는 책의 폭 (= 책의 실제 높이에 해당)
+///   - imageAspect: 실제 책등 이미지의 두께/높이 비율. 이미지가 없으면 nil
+///   - blend: 이미지 비율 반영 정도 (0…1)
+func spineThickness(pages: Int32,
+                    isKorean: Bool,
+                    bookWidth: CGFloat,
+                    imageAspect: CGFloat?,
+                    blend: CGFloat = SpineConfig.defaultAspectBlend) -> CGFloat {
+    let p = CGFloat(max(1, Int(pages)))
+    let langMul = isKorean ? SpineConfig.langMulKO : SpineConfig.langMulForeign
+    let fromPages = bookWidth * p * SpineConfig.thicknessPerPage * langMul
+
+    var result = fromPages
+    if let aspect = imageAspect, aspect.isFinite, aspect > 0.001 {
+        let fromImage = bookWidth * aspect
+        let a = min(max(blend, 0), 1)
+        // 기하 혼합 — 한쪽이 극단적이어도 완만하게 섞인다
+        result = pow(fromPages, 1 - a) * pow(fromImage, a)
+        // 크롭이 잘못돼도 쪽수 기준에서 크게 벗어나지 않도록 제한
+        result = min(max(result, fromPages * 0.6), fromPages * 1.7)
+    }
+    guard result.isFinite else { return SpineConfig.minThickness }
+    return min(max(result, SpineConfig.minThickness), SpineConfig.maxThickness)
+        .rounded(.toNearestOrAwayFromZero)
 }
 
 @inline(__always)
