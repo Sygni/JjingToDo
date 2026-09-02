@@ -94,7 +94,7 @@ enum CoverImageStore {
     private static let spineMaxAspect: CGFloat = 0.4
 
     /// 실제 책등 원본 (세로 방향). 없으면 nil + 재시도 안 함 마커.
-    static func kyoboSpineRaw(isbn: String) async -> UIImage? {
+    static func storeSpineRaw(isbn: String) async -> UIImage? {
         let key = ("kspineraw|" + isbn) as NSString
         if let hit = memCache.object(forKey: key) { return hit }
 
@@ -172,10 +172,10 @@ enum CoverImageStore {
     }
 
     /// 실제 책등 (왼쪽 90도 회전 완료 상태로 반환)
-    static func kyoboSpine(isbn: String) async -> UIImage? {
+    static func storeSpine(isbn: String) async -> UIImage? {
         let key = ("kspine|" + isbn) as NSString
         if let hit = rotatedCache.object(forKey: key) { return hit }
-        guard let raw = await kyoboSpineRaw(isbn: isbn) else { return nil }
+        guard let raw = await storeSpineRaw(isbn: isbn) else { return nil }
         let rotated = raw.rotated90CCW()
         rotatedCache.setObject(rotated, forKey: key)
         return rotated
@@ -428,7 +428,7 @@ struct BookStackView: View {
             }
             // 2순위: 교보 실제 책등 (사용자가 제거했으면 건너뜀)
             if !book.spineHidden, let isbn = book.isbn, isbn.count == 13 {
-                realSpine = await CoverImageStore.kyoboSpine(isbn: isbn)
+                realSpine = await CoverImageStore.storeSpine(isbn: isbn)
                 if realSpine != nil { return }
             }
             // 3순위: 표지 텍스처 (직접 올린 표지 우선)

@@ -49,7 +49,7 @@ struct CoverPickerSection: View {
     @State private var candidates: [SearchBook] = []
     @State private var isSearching = false
     @State private var didSearch = false
-    @State private var kyoboSpine: UIImage? = nil
+    @State private var storeSpine: UIImage? = nil
     @State private var spineChecked = false
     @State private var coverPick: PhotosPickerItem? = nil
     @State private var spinePick: PhotosPickerItem? = nil
@@ -67,7 +67,7 @@ struct CoverPickerSection: View {
     /// 실제로 책등에 그려질 이미지 (직접 올린 것 > 교보, 제거했으면 없음)
     private var effectiveSpine: UIImage? {
         if let custom = UserImageStore.image(named: customSpineFile) { return custom }
-        return spineHidden ? nil : kyoboSpine
+        return spineHidden ? nil : storeSpine
     }
 
     var body: some View {
@@ -136,9 +136,9 @@ struct CoverPickerSection: View {
                         Button {
                             spineHidden = false
                             CoverImageStore.clearSpineCache(isbn: isbn)
-                            _Concurrency.Task { await loadKyoboSpine() }
+                            _Concurrency.Task { await loadStoreSpine() }
                         } label: {
-                            Label("교보에서 다시 찾기", systemImage: "arrow.clockwise")
+                            Label("책등 다시 찾기", systemImage: "arrow.clockwise")
                         }
                     }
 
@@ -167,7 +167,7 @@ struct CoverPickerSection: View {
                     .font(.footnote)
             }
             // 항상 화면에 있는 행에 부착해야 핸들러가 유지된다
-            .task(id: isbn) { await loadKyoboSpine() }
+            .task(id: isbn) { await loadStoreSpine() }
             .onChange(of: coverPick) { _, item in
                 guard let item else { return }
                 _Concurrency.Task { await importPhoto(item, asSpine: false) }
@@ -198,9 +198,9 @@ struct CoverPickerSection: View {
         if customSpineFile != nil { return "직접 올린 책등을 사용합니다." }
         if spineHidden { return "책등을 사용하지 않습니다 — 표지 색으로 그려집니다." }
         if !spineChecked { return "책등을 확인하는 중..." }
-        if kyoboSpine != nil { return "교보문고 책등 이미지를 사용합니다." }
-        if isbn.count == 13 { return "교보에 이 책의 책등 이미지가 없어요. 사진을 직접 올릴 수 있어요." }
-        return "ISBN을 입력하면 교보에서 책등을 찾아봅니다."
+        if storeSpine != nil { return "서점에서 받은 책등 이미지를 사용합니다." }
+        if isbn.count == 13 { return "YES24·교보문고 모두 이 책의 책등 이미지가 없어요. 사진을 직접 올릴 수 있어요." }
+        return "ISBN을 입력하면 YES24·교보문고에서 책등을 찾아봅니다."
     }
 
     // MARK: 미리보기
@@ -330,11 +330,11 @@ struct CoverPickerSection: View {
     }
 
     @MainActor
-    private func loadKyoboSpine() async {
-        kyoboSpine = nil
+    private func loadStoreSpine() async {
+        storeSpine = nil
         spineChecked = false
         guard isbn.count == 13 else { spineChecked = true; return }
-        kyoboSpine = await CoverImageStore.kyoboSpineRaw(isbn: isbn)
+        storeSpine = await CoverImageStore.storeSpineRaw(isbn: isbn)
         spineChecked = true
     }
 
