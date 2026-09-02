@@ -14,6 +14,9 @@ struct SearchBook: Identifiable, Hashable {
     var coverURL: URL? = nil
     var publisher: String? = nil
     var isbn: String? = nil
+    /// 실측 판형 (mm) — 알라딘 ItemLookUp의 packing 정보에서만 제공된다
+    var heightMM: Int? = nil
+    var thicknessMM: Int? = nil
 }
 
 protocol BookSearchService {

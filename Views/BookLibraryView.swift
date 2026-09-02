@@ -29,9 +29,8 @@ struct BookLibraryView: View {
 
                 GeometryReader { proxy in
                         let fullW = proxy.size.width
-                        // 실제 책등 비율에 가깝게 — 폭을 넓히면 두께 왜곡이 줄고 제목도 커진다
-                        let bookW = min(fullW * 0.76, 360)
-                        let centerBase = (fullW - bookW) / 2
+                        // LazyVStack의 좌우 패딩(8pt)을 뺀 실제 배치 가능 폭
+                        let availW = max(1, fullW - 16)
 
                         let listSorted: [Book] = Array(books).sorted { a, b in
                             let da = a.dateRead ?? .distantPast
@@ -46,12 +45,17 @@ struct BookLibraryView: View {
                             LazyVStack(spacing: 0) {
                                 ForEach(Array(listSorted.enumerated()), id: \.1.objectID) { idx, book in
                                     let key = (book.title ?? "") + "|" + (book.author ?? "")
-                                    let jitter = startOffsetX(from: key, maxJitter: 24)
-                                    let start = centerBase + jitter
+                                    // 판형(실측 높이)에 따라 책마다 폭이 달라진다
+                                    let bookW = min(bookRenderWidth(heightMM: book.heightMM,
+                                                                    containerWidth: fullW), availW)
+                                    let jitter = startOffsetX(from: key, maxJitter: 16)
+                                    let centerBase = (availW - bookW) / 2
+                                    // 넓은 책이 오른쪽으로 넘치지 않도록 시작 위치를 제한
+                                    let start = min(max(0, centerBase + jitter), max(0, availW - bookW))
                                     let tone: CGFloat = toneFlags[idx] ? 0.90 : 1.0
 
                                     HStack(spacing: 0) {
-                                        Spacer().frame(width: max(0, start))
+                                        Spacer().frame(width: start)
                                         BookStackView(book: book, tone: tone, width: bookW)
                                             .frame(width: bookW, alignment: .leading)
                                             .contextMenu {

@@ -17,7 +17,7 @@ struct AladinClient {
             .init(name: "ItemId", value: isbn13),
             .init(name: "output", value: "js"),
             .init(name: "Version", value: "20131101"),
-            .init(name: "OptResult", value: "subInfo"),
+            .init(name: "OptResult", value: "packing,subInfo"),
             .init(name: "Cover", value: "Big")
         ]
         let (data, _) = try await URLSession.shared.data(from: comp.url!)
@@ -37,7 +37,7 @@ struct AladinClient {
             .init(name: "MaxResults", value: "\(max)"),
             .init(name: "output", value: "js"),
             .init(name: "Version", value: "20131101"),
-            .init(name: "OptResult", value: "subInfo"),
+            .init(name: "OptResult", value: "packing,subInfo"),
             .init(name: "Cover", value: "Big")
         ]
         let (data, _) = try await URLSession.shared.data(from: comp.url!)
@@ -57,7 +57,16 @@ struct AladinClient {
         let cover: String?
         let subInfo: SubInfo?
 
-        struct SubInfo: Decodable { let itemPage: Int? }
+        struct SubInfo: Decodable {
+            let itemPage: Int?
+            let packing: Packing?
+        }
+        /// 알라딘 실측 크기 (ItemLookUp에서만 제공)
+        struct Packing: Decodable {
+            let sizeDepth: Int?     // 두께
+            let sizeHeight: Int?    // 세로 = 책 높이
+            let sizeWidth: Int?     // 가로
+        }
 
         func toSearchBook() -> SearchBook {
             let pages = itemPage ?? subInfo?.itemPage
@@ -79,7 +88,9 @@ struct AladinClient {
                 languageCode: nil,
                 coverURL: coverBig.flatMap { URL(string: $0.replacingOccurrences(of: "http://", with: "https://")) },
                 publisher: publisher?.trimmingCharacters(in: .whitespaces),
-                isbn: isbn13
+                isbn: isbn13,
+                heightMM: subInfo?.packing?.sizeHeight,
+                thicknessMM: subInfo?.packing?.sizeDepth
             )
         }
     }

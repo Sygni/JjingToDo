@@ -94,12 +94,12 @@ struct DebugToolView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("책 두께 기준").font(.subheadline)
                         Picker("책 두께 기준", selection: $spineAspectBlend) {
-                            Text("쪽수 우선").tag(0.2)
+                            Text("실측 우선").tag(0.2)
                             Text("균형").tag(0.5)
                             Text("실물 비율").tag(0.85)
                         }
                         .pickerStyle(.segmented)
-                        Text("실제 책등 이미지가 있는 책에만 적용돼요. 오른쪽으로 갈수록 실물 비율에 가까워지고, 왼쪽일수록 쪽수 차이가 두드러집니다.")
+                        Text("책 높이는 알라딘 실측 판형을 따릅니다. 이 설정은 책등 이미지가 있는 책의 두께를 실측값과 이미지 비율 중 어느 쪽에 맞출지 정해요.")
                             .font(.caption)
                             .foregroundColor(.gray)
                     }
@@ -109,7 +109,7 @@ struct DebugToolView: View {
                         backfillCovers()
                     } label: {
                         HStack {
-                            Text("📕 책 표지·ISBN 일괄 가져오기")
+                            Text("📕 표지·ISBN·판형 일괄 가져오기")
                             if isBackfillingCovers { Spacer(); ProgressView() }
                         }
                     }
@@ -146,18 +146,20 @@ struct DebugToolView: View {
         _Concurrency.Task { @MainActor in
             let req = NSFetchRequest<Book>(entityName: "Book")
             let books = (try? viewContext.fetch(req)) ?? []
-            // 표지나 ISBN이 빈 책 모두 대상 (ISBN은 교보 실제 책등 조회에 필요)
+            // 표지·ISBN·판형 중 하나라도 비면 대상
             let targets = books.filter {
-                (($0.coverURL ?? "").isEmpty || ($0.isbn ?? "").isEmpty) && !($0.title ?? "").isEmpty
+                (($0.coverURL ?? "").isEmpty || ($0.isbn ?? "").isEmpty || $0.heightMM <= 0)
+                    && !($0.title ?? "").isEmpty
             }
 
             guard !targets.isEmpty else {
-                backfillStatus = "표지·ISBN이 없는 책이 없습니다."
+                backfillStatus = "채울 정보가 없습니다."
                 isBackfillingCovers = false
                 return
             }
 
             let service = MultiSourceSearchService()
+            let aladin = AladinClient()
             var found = 0
 
             for (idx, book) in targets.enumerated() {
@@ -191,6 +193,15 @@ struct DebugToolView: View {
                     book.coverURL = withCover.absoluteString
                     updated = true
                 }
+
+                // 판형(실측 mm)은 ISBN 개별 조회에서만 제공된다
+                if book.heightMM <= 0, let isbn = book.isbn, isbn.count == 13,
+                   let detail = try? await aladin.lookup(isbn13: isbn) {
+                    if let h = detail.heightMM, h > 0 { book.heightMM = Int16(h); updated = true }
+                    if let t = detail.thicknessMM, t > 0 { book.thicknessMM = Int16(t); updated = true }
+                    try? await _Concurrency.Task.sleep(nanoseconds: 250_000_000)
+                }
+
                 if updated { found += 1 }
 
                 // API 연속 호출 부담 완화

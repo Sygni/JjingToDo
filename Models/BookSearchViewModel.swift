@@ -79,6 +79,8 @@ final class BookSearchViewModel: ObservableObject {
         book.coverURL = s.coverURL?.absoluteString
         book.publisher = s.publisher
         book.isbn = Self.isbn13(of: s)
+        book.heightMM = Int16(s.heightMM ?? 0)
+        book.thicknessMM = Int16(s.thicknessMM ?? 0)
         let language = BookLanguage.infer(code: s.languageCode, title: s.title)
         book.language = language
         book.isKorean = (language == "한국어")
@@ -119,6 +121,8 @@ final class BookSearchViewModel: ObservableObject {
         book.dateRead = dateRead
         book.coverURL = s.coverURL?.absoluteString
         book.isbn = Self.isbn13(of: s)
+        book.heightMM = Int16(s.heightMM ?? 0)
+        book.thicknessMM = Int16(s.thicknessMM ?? 0)
 
         do {
             try context.save()

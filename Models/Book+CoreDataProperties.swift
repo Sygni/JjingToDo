@@ -25,6 +25,9 @@ extension Book {
     @NSManaged public var customCoverFile: String?
     @NSManaged public var customSpineFile: String?
     @NSManaged public var spineHidden: Bool
+    /// 실측 판형 (mm) — 알라딘 packing 정보. 0이면 미확인
+    @NSManaged public var heightMM: Int16
+    @NSManaged public var thicknessMM: Int16
 
 }
 

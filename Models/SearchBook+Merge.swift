@@ -36,7 +36,10 @@ extension Array where Element == SearchBook {
 
         let publisher = self.compactMap(\.publisher).first { !$0.isEmpty } ?? first.publisher
         let isbn = self.compactMap(\.isbn).first { $0.count == 13 } ?? first.isbn
+        let heightMM = self.compactMap(\.heightMM).first { $0 > 0 }
+        let thicknessMM = self.compactMap(\.thicknessMM).first { $0 > 0 }
 
-        return SearchBook(id: first.id, title: title, authors: authors, pageCount: pages, languageCode: lang, coverURL: cover, publisher: publisher, isbn: isbn)
+        return SearchBook(id: first.id, title: title, authors: authors, pageCount: pages, languageCode: lang, coverURL: cover, publisher: publisher, isbn: isbn,
+                          heightMM: heightMM, thicknessMM: thicknessMM)
     }
 }

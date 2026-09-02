@@ -78,6 +78,8 @@ struct MultiSourceSearchService: BookSearchService {
                 if base.coverURL == nil, let cover = o.coverURL { base.coverURL = cover }
                 if base.publisher?.isEmpty != false, let pub = o.publisher { base.publisher = pub }
                 if base.isbn?.isEmpty != false, let isbn = o.isbn { base.isbn = isbn }
+                if base.heightMM == nil, let h = o.heightMM { base.heightMM = h }
+                if base.thicknessMM == nil, let t = o.thicknessMM { base.thicknessMM = t }
                 dict[mk] = base
             } else {
                 if dict[k] == nil { order.append(k) }

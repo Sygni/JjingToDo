@@ -261,7 +261,10 @@ struct BookStackView: View {
         let pagesSafe = max(1, Int(book.pages))
         // 실제 책등 이미지가 있으면 그 두께/높이 비율을 두께 계산에 반영
         let imageAspect: CGFloat? = realSpine.map { $0.size.height / max($0.size.width, 1) }
-        let hRaw = spineThickness(pages: Int32(pagesSafe), isKorean: isKo,
+        let hRaw = spineThickness(pages: Int32(pagesSafe),
+                                  thicknessMM: book.thicknessMM,
+                                  heightMM: book.heightMM,
+                                  isKorean: isKo,
                                   bookWidth: width, imageAspect: imageAspect,
                                   blend: CGFloat(aspectBlend))
         let h = safeCGFloat(hRaw, min: SpineConfig.minThickness, max: SpineConfig.maxThickness)

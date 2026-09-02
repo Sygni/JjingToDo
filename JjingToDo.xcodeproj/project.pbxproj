@@ -175,6 +175,7 @@
 		93836878E3144821B598F79D /* DataModel 9.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "DataModel 9.xcdatamodel"; sourceTree = "<group>"; };
 		93836879E3144821B598F79E /* DataModel 10.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "DataModel 10.xcdatamodel"; sourceTree = "<group>"; };
 		9383687AE3144821B598F79F /* DataModel 11.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "DataModel 11.xcdatamodel"; sourceTree = "<group>"; };
+		9383687BE3144821B598F7A0 /* DataModel 12.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "DataModel 12.xcdatamodel"; sourceTree = "<group>"; };
 		AA00BB112D9931D9008BCDE0 /* PointGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointGuideView.swift; sourceTree = "<group>"; };
 		AA00CC102D9931D9008BCDE0 /* RewardEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RewardEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
 		AA00CC132D9931D9008BCDE0 /* RewardEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RewardEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
@@ -922,8 +923,9 @@
 				93836878E3144821B598F79D /* DataModel 9.xcdatamodel */,
 				93836879E3144821B598F79E /* DataModel 10.xcdatamodel */,
 				9383687AE3144821B598F79F /* DataModel 11.xcdatamodel */,
+				9383687BE3144821B598F7A0 /* DataModel 12.xcdatamodel */,
 			);
-			currentVersion = 9383687AE3144821B598F79F /* DataModel 11.xcdatamodel */;
+			currentVersion = 9383687BE3144821B598F7A0 /* DataModel 12.xcdatamodel */;
 			path = DataModel.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;
