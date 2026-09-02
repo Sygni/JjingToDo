@@ -378,6 +378,9 @@ struct EditBookView: View {
     @State private var dateRead: Date = Date()
     @State private var coverURLString: String = ""
     @State private var isbn: String = ""
+    @State private var heightMMText: String = ""
+    @State private var thicknessMMText: String = ""
+    @State private var isFetchingSize = false
     @State private var customCoverFile: String? = nil
     @State private var customSpineFile: String? = nil
     @State private var spineHidden: Bool = false
@@ -395,6 +398,31 @@ struct EditBookView: View {
                 }
                 Section("언어") {
                     LanguagePickerField(language: $language)
+                }
+                Section {
+                    HStack {
+                        Text("높이").frame(width: 44, alignment: .leading)
+                        TextField("mm", text: $heightMMText).keyboardType(.numberPad)
+                        Text("mm").foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text("두께").frame(width: 44, alignment: .leading)
+                        TextField("mm", text: $thicknessMMText).keyboardType(.numberPad)
+                        Text("mm").foregroundStyle(.secondary)
+                    }
+                    Button {
+                        _Concurrency.Task { await fetchRealSize() }
+                    } label: {
+                        HStack {
+                            Label("알라딘에서 실측값 가져오기", systemImage: "arrow.down.circle")
+                            if isFetchingSize { Spacer(); ProgressView() }
+                        }
+                    }
+                    .disabled(isFetchingSize || isbn.filter(\.isNumber).count != 13)
+                } header: {
+                    Text("실물 크기")
+                } footer: {
+                    Text("책 높이는 서가에서의 가로 길이를, 두께는 세로 두께를 정해요. 비워 두면 책등 이미지 비율과 쪽수로 추정합니다.")
                 }
                 CoverPickerSection(
                     coverURLString: $coverURLString,
@@ -434,6 +462,8 @@ struct EditBookView: View {
         language = book.language ?? (book.isKorean ? "한국어" : "영어")
         coverURLString = book.coverURL ?? ""
         isbn = book.isbn ?? ""
+        heightMMText = book.heightMM > 0 ? String(book.heightMM) : ""
+        thicknessMMText = book.thicknessMM > 0 ? String(book.thicknessMM) : ""
         customCoverFile = book.customCoverFile
         customSpineFile = book.customSpineFile
         spineHidden = book.spineHidden
@@ -448,6 +478,18 @@ struct EditBookView: View {
         dismiss()
     }
 
+    /// ISBN으로 알라딘 실측 크기를 받아 채운다
+    @MainActor
+    private func fetchRealSize() async {
+        let clean = isbn.filter(\.isNumber)
+        guard clean.count == 13 else { return }
+        isFetchingSize = true
+        defer { isFetchingSize = false }
+        guard let found = try? await AladinClient().lookup(isbn13: clean) else { return }
+        if let h = found.heightMM, h > 0 { heightMMText = String(h) }
+        if let t = found.thicknessMM, t > 0 { thicknessMMText = String(t) }
+    }
+
     private func save() {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty else { alertMsg = "제목을 입력해 주세요."; showAlert = true; return }
@@ -460,6 +502,8 @@ struct EditBookView: View {
             // 교체·제거된 기존 사진 파일 정리
             if book.customCoverFile != customCoverFile { UserImageStore.delete(book.customCoverFile) }
             if book.customSpineFile != customSpineFile { UserImageStore.delete(book.customSpineFile) }
+            book.heightMM = Int16(heightMMText.filter(\.isNumber).prefix(3)) ?? 0
+            book.thicknessMM = Int16(thicknessMMText.filter(\.isNumber).prefix(3)) ?? 0
             book.customCoverFile = customCoverFile
             book.customSpineFile = customSpineFile
             book.spineHidden = spineHidden

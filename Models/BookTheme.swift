@@ -33,8 +33,6 @@ struct SpineConfig {
     static var langMulKO: CGFloat = 1.0
     static var langMulForeign: CGFloat = 1.3
 
-    /// 실제 책등 이미지 비율을 얼마나 반영할지 (0 = 실측/쪽수만, 1 = 이미지 비율만)
-    static var defaultAspectBlend: CGFloat = 0.5
     static var minThickness: CGFloat = 10
     static var maxThickness: CGFloat = 95
 }
@@ -48,6 +46,10 @@ struct BookMetrics {
     static let defaultHeightMM: CGFloat = 205
     /// 두께를 모를 때 쪽수로 추정하는 계수
     static let mmPerPage: CGFloat = 0.0565
+    /// 쪽수조차 없을 때 쓰는 무난한 두께 (조사한 13권 중앙값 19mm)
+    static let fallbackThicknessMM: CGFloat = 19
+    /// 책등으로 인정할 최대 가로세로비
+    static let maxSpineAspect: CGFloat = 0.4
     /// 기준 폭 = 화면 폭의 이 비율
     static let widthFraction: CGFloat = 0.72
     static let maxWidth: CGFloat = 360
@@ -65,33 +67,40 @@ func bookRenderWidth(heightMM: Int16, containerWidth: CGFloat) -> CGFloat {
 }
 
 /// 눕혀 쌓은 책의 두께(=화면상 높이).
-/// 실측 두께(mm)가 있으면 판형과의 실제 비율을 그대로 쓰고, 없으면 쪽수로 추정한다.
+/// 믿을 수 있는 정보부터 차례로 사용한다:
+/// 실측 두께 → 책등 이미지 비율 → 쪽수 추정 → 기본값.
+/// 정보가 전혀 없는 책도 지나치게 얇아지지 않도록 마지막에 기본 두께로 받쳐 준다.
 func spineThickness(pages: Int32,
                     thicknessMM: Int16,
                     heightMM: Int16,
                     isKorean: Bool,
                     bookWidth: CGFloat,
-                    imageAspect: CGFloat?,
-                    blend: CGFloat = SpineConfig.defaultAspectBlend) -> CGFloat {
+                    imageAspect: CGFloat?) -> CGFloat {
     let hMM = heightMM > 0 ? CGFloat(heightMM) : BookMetrics.defaultHeightMM
-    let tMM: CGFloat = {
-        if thicknessMM > 0 { return CGFloat(thicknessMM) }
-        let langMul = isKorean ? SpineConfig.langMulKO : SpineConfig.langMulForeign
-        return CGFloat(max(1, Int(pages))) * BookMetrics.mmPerPage * langMul
-    }()
 
-    let fromPhysical = bookWidth * (tMM / hMM)
-    var result = fromPhysical
-
-    // 책등 이미지 비율과 섞기 — 크롭 여백 때문에 이미지 쪽이 조금 두껍게 나오는 편
-    if let aspect = imageAspect, aspect.isFinite, aspect > 0.001 {
-        let a = min(max(blend, 0), 1)
-        result = pow(fromPhysical, 1 - a) * pow(bookWidth * aspect, a)
-        result = min(max(result, fromPhysical * 0.6), fromPhysical * 1.7)
+    func clamped(_ v: CGFloat) -> CGFloat {
+        guard v.isFinite else { return SpineConfig.minThickness }
+        return min(max(v, SpineConfig.minThickness), SpineConfig.maxThickness)
+            .rounded(.toNearestOrAwayFromZero)
     }
-    guard result.isFinite else { return SpineConfig.minThickness }
-    return min(max(result, SpineConfig.minThickness), SpineConfig.maxThickness)
-        .rounded(.toNearestOrAwayFromZero)
+
+    // 1. 실측 두께 — 판형과의 실제 비율을 그대로
+    if thicknessMM > 0 {
+        return clamped(bookWidth * (CGFloat(thicknessMM) / hMM))
+    }
+    // 2. 책등 이미지 비율 — YES24 기준 실측 대비 오차 약 ±15%
+    if let aspect = imageAspect, aspect.isFinite,
+       aspect > 0.005, aspect <= BookMetrics.maxSpineAspect {
+        return clamped(bookWidth * aspect)
+    }
+    // 3. 쪽수 추정
+    if pages > 0 {
+        let langMul = isKorean ? SpineConfig.langMulKO : SpineConfig.langMulForeign
+        let tMM = CGFloat(pages) * BookMetrics.mmPerPage * langMul
+        return clamped(bookWidth * (tMM / hMM))
+    }
+    // 4. 아무 정보도 없을 때 — 얇은 조각이 되지 않도록 평균적인 두께로
+    return clamped(bookWidth * (BookMetrics.fallbackThicknessMM / hMM))
 }
 
 @inline(__always)

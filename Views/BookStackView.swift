@@ -78,8 +78,9 @@ enum CoverImageStore {
         return rotated
     }
 
-    // MARK: 교보문고 실제 책등 이미지
-    // addt/{isbn13}_0N.jpg 후보들 중 "흰 배경 + 좁고 긴 세로 띠" 이미지를 판별해 띠만 크롭
+    // MARK: 실제 책등 이미지 (YES24 우선 → 교보문고 보조)
+    // YES24는 /side로 여백 없이 잘린 책등을 바로 주고 비율도 실측에 가깝다.
+    // 없는 책은 154x220 플레이스홀더가 오므로 가로세로비로 걸러낸다.
 
     // dir을 거쳐야 BookCovers 폴더 생성이 보장됨 (직접 경로 조립 시 저장이 조용히 실패)
     private static func spineFile(isbn: String) -> URL {
@@ -89,7 +90,10 @@ enum CoverImageStore {
         dir.appendingPathComponent("spine_\(isbn).none")
     }
 
-    /// 교보 실제 책등 원본 (세로 방향, 크롭된 상태). 없으면 nil + 재시도 안 함 마커.
+    /// 책등으로 인정할 최대 가로세로비 (이보다 뭉툭하면 표지·플레이스홀더로 본다)
+    private static let spineMaxAspect: CGFloat = 0.4
+
+    /// 실제 책등 원본 (세로 방향). 없으면 nil + 재시도 안 함 마커.
     static func kyoboSpineRaw(isbn: String) async -> UIImage? {
         let key = ("kspineraw|" + isbn) as NSString
         if let hit = memCache.object(forKey: key) { return hit }
@@ -101,28 +105,73 @@ enum CoverImageStore {
         }
         if FileManager.default.fileExists(atPath: spineMissMarker(isbn: isbn).path) { return nil }
 
-        var receivedAnyImage = false
+        var reachedServer = false
+
+        // 1순위: YES24 — 이미 잘려 있어 크롭이 필요 없다
+        if let (img, ok) = await yes24SpineImage(isbn: isbn) {
+            reachedServer = true
+            if let spine = img, ok {
+                cacheSpine(spine, key: key, file: file)
+                return spine
+            }
+        }
+
+        // 2순위: 교보문고 — 흰 배경에서 띠를 찾아 잘라낸다
         for n in 1...4 {
             let urlStr = "https://contents.kyobobook.co.kr/sih/fit-in/720x0/pdt/addt/\(isbn)_0\(n).jpg"
             guard let url = URL(string: urlStr),
                   let (data, resp) = try? await URLSession.shared.data(from: url),
                   (resp as? HTTPURLResponse)?.statusCode == 200,
                   let img = UIImage(data: data) else { continue }
-            receivedAnyImage = true
+            reachedServer = true
             if let spine = Self.cropSpineStrip(img) {
-                if let png = spine.pngData() { try? png.write(to: file, options: .atomic) }
-                memCache.setObject(spine, forKey: key)
+                cacheSpine(spine, key: key, file: file)
                 return spine
             }
         }
-        // 네트워크 실패로 이미지를 하나도 못 받았으면 마커를 남기지 않음 (다음에 재시도)
-        if receivedAnyImage {
+        // 네트워크 실패로 서버에 닿지 못했으면 마커를 남기지 않음 (다음에 재시도)
+        if reachedServer {
             try? Data().write(to: spineMissMarker(isbn: isbn))
         }
         return nil
     }
 
-    /// 교보 실제 책등 (왼쪽 90도 회전 완료 상태로 반환)
+    private static func cacheSpine(_ img: UIImage, key: NSString, file: URL) {
+        if let png = img.pngData() { try? png.write(to: file, options: .atomic) }
+        memCache.setObject(img, forKey: key)
+    }
+
+    /// YES24 책등 조회. 반환값 (이미지, 책등맞음) — 서버에 닿았는지 구분하려고 옵셔널을 감쌌다.
+    private static func yes24SpineImage(isbn: String) async -> (UIImage?, Bool)? {
+        guard let goods = await yes24GoodsNo(isbn: isbn),
+              let url = URL(string: "https://image.yes24.com/goods/\(goods)/side"),
+              let (data, resp) = try? await URLSession.shared.data(from: url),
+              (resp as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+        guard let img = UIImage(data: data), img.size.height > 0 else { return (nil, false) }
+        // 책등이 없는 상품은 154x220 안내 이미지가 온다
+        let aspect = img.size.width / img.size.height
+        return (img, aspect <= spineMaxAspect)
+    }
+
+    /// ISBN으로 YES24 상품번호 찾기 (검색 페이지가 서버 렌더링이라 정규식으로 추출 가능)
+    private static func yes24GoodsNo(isbn: String) async -> String? {
+        guard let url = URL(string: "https://www.yes24.com/product/search?domain=ALL&query=\(isbn)") else { return nil }
+        var req = URLRequest(url: url)
+        req.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+                     forHTTPHeaderField: "User-Agent")
+        req.timeoutInterval = 15
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let html = String(data: data, encoding: .utf8) else { return nil }
+        // 검색 결과의 상품 이미지 URL에서 뽑는 게 광고 링크와 섞이지 않는다
+        let pattern = #"image\.yes24\.com/goods/(\d+)/"#
+        guard let re = try? NSRegularExpression(pattern: pattern),
+              let m = re.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
+              let r = Range(m.range(at: 1), in: html) else { return nil }
+        return String(html[r])
+    }
+
+    /// 실제 책등 (왼쪽 90도 회전 완료 상태로 반환)
     static func kyoboSpine(isbn: String) async -> UIImage? {
         let key = ("kspine|" + isbn) as NSString
         if let hit = rotatedCache.object(forKey: key) { return hit }
@@ -251,7 +300,6 @@ struct BookStackView: View {
     var width: CGFloat = 228
 
     @AppStorage("spineUsesCoverColor") private var useCoverTexture = true
-    @AppStorage("spineAspectBlend") private var aspectBlend: Double = 0.5
     @State private var coverImage: UIImage? = nil
     @State private var coverDominant: UIColor? = nil
     @State private var realSpine: UIImage? = nil   // 교보 실제 책등 (회전 완료)
@@ -265,8 +313,7 @@ struct BookStackView: View {
                                   thicknessMM: book.thicknessMM,
                                   heightMM: book.heightMM,
                                   isKorean: isKo,
-                                  bookWidth: width, imageAspect: imageAspect,
-                                  blend: CGFloat(aspectBlend))
+                                  bookWidth: width, imageAspect: imageAspect)
         let h = safeCGFloat(hRaw, min: SpineConfig.minThickness, max: SpineConfig.maxThickness)
 
         let textureActive = useCoverTexture && coverImage != nil
