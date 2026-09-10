@@ -10,6 +10,7 @@ import CoreData
 struct MainTodoView: View {
     let user: UserEntity
     @Environment(\.managedObjectContext) /*private*/ var viewContext
+    @Environment(\.colorScheme) private var colorScheme
     
     @FetchRequest(
         entity: TaskEntity.entity(),
@@ -340,6 +341,17 @@ struct MainTodoView: View {
         .buttonStyle(.plain)
     }
 
+    /// 세그먼트 피커(UISegmentedControl)는 foregroundColor를 무시하므로
+    /// 이미지 자체에 색을 입혀 alwaysOriginal로 넘긴다. 기본 라벨색은 너무 진하다.
+    private func categoryIcon(_ type: TaskType) -> Image {
+        let tint = UIColor(white: colorScheme == .dark ? 0.74 : 0.46, alpha: 1)
+        let config = UIImage.SymbolConfiguration(pointSize: 15, weight: .regular)
+        guard let base = UIImage(systemName: type.icon, withConfiguration: config) else {
+            return Image(systemName: type.icon)
+        }
+        return Image(uiImage: base.withTintColor(tint, renderingMode: .alwaysOriginal))
+    }
+
     /// 입력줄에 들어가는 마감일 토글 — 날짜를 고르면 버튼에 그대로 표시된다
     private var dueDateButton: some View {
         Button {
@@ -425,7 +437,7 @@ struct MainTodoView: View {
 
                 Picker("타입", selection: $selectedTaskType) {
                     ForEach(TaskType.allCases, id: \.self) { type in
-                        Image(systemName: type.icon).tag(type)
+                        categoryIcon(type).tag(type)
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
