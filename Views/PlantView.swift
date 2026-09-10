@@ -116,15 +116,21 @@ struct PlantView: View {
                           control: CGPoint(x: w / 2 + lean * 0.3, y: h * 0.65))
         ctx.stroke(stem, with: .color(stemColor), style: StrokeStyle(lineWidth: max(1.1, w * 0.06), lineCap: .round))
 
-        let leafAt = CGPoint(x: w / 2 + lean * 0.35, y: h * 0.66)
-        ctx.fill(placeLeaf(leafPath(length: w * 0.3, width: w * 0.17), at: leafAt, angle: -0.55),
+        // 줄기 양쪽에 잎 두 장 — 높이를 달리해 자연스럽게
+        let leafLen = min(w * 0.32, (h - topY) * 0.42)
+        let rightAt = CGPoint(x: w / 2 + lean * 0.45, y: topY + (h - topY) * rng.next(0.34, 0.44))
+        ctx.fill(placeLeaf(leafPath(length: leafLen, width: leafLen * 0.56), at: rightAt, angle: -0.62),
                  with: .color(Color(hex: "#8FBF4D")))
+        let leftAt = CGPoint(x: w / 2 + lean * 0.25, y: topY + (h - topY) * rng.next(0.6, 0.72))
+        ctx.fill(placeLeaf(leafPath(length: leafLen * 0.88, width: leafLen * 0.5), at: leftAt,
+                           angle: .pi + 0.62),
+                 with: .color(Color(hex: "#7FB03F")))
 
         let cx = w / 2 + lean
         let cy = topY
-        let petals = Int(rng.next(5, 6.99))
+        let petals = Int(rng.next(7, 9.99))
         for i in 0..<petals {
-            let a = (CGFloat(i) / CGFloat(petals)) * .pi * 2 + rng.next(-0.1, 0.1)
+            let a = (CGFloat(i) / CGFloat(petals)) * .pi * 2 + rng.next(-0.06, 0.06)
             let rect = CGRect(x: cx + cos(a) * ring - pr / 2, y: cy + sin(a) * ring - pr / 2,
                               width: pr, height: pr)
             ctx.fill(Path(ellipseIn: rect), with: .color(i % 2 == 0 ? main : sub))
@@ -135,11 +141,11 @@ struct PlantView: View {
 
     private func drawMushroom(_ ctx: inout GraphicsContext, w: CGFloat, h: CGFloat,
                               lean: CGFloat, rng: inout PlantRandom) {
-        let capW = w * rng.next(0.62, 0.82)
-        let capH = min(capW * rng.next(0.5, 0.66), h * 0.36)
+        let capW = w * rng.next(0.82, 0.98)
+        let capH = min(capW * rng.next(0.56, 0.72), h * 0.46)
         // 2차 곡선의 꼭대기는 제어점의 약 3/4 지점
         let capY = capH * 1.28 + h * 0.03
-        let stemW = w * rng.next(0.15, 0.21)
+        let stemW = capW * rng.next(0.3, 0.38)
         let stem = Path(roundedRect: CGRect(x: w / 2 + lean * 0.5 - stemW / 2, y: capY,
                                             width: stemW, height: h - capY),
                         cornerRadius: stemW * 0.4)
@@ -153,11 +159,11 @@ struct PlantView: View {
         cap.closeSubpath()
         ctx.fill(cap, with: .color(main))
 
-        let dots = Int(rng.next(2, 3.99))
+        let dots = Int(rng.next(3, 4.99))
         for _ in 0..<dots {
-            let dx = rng.next(-0.3, 0.3) * capW
-            let dy = rng.next(-0.55, -0.15) * capH
-            let dr = w * rng.next(0.05, 0.09)
+            let dx = rng.next(-0.28, 0.28) * capW
+            let dy = rng.next(-0.6, -0.18) * capH
+            let dr = capW * rng.next(0.07, 0.11)
             ctx.fill(Path(ellipseIn: CGRect(x: cx + dx - dr, y: capY + dy - dr, width: dr * 2, height: dr * 2)),
                      with: .color(Color.white.opacity(0.85)))
         }
@@ -174,15 +180,21 @@ struct PlantView: View {
         ctx.fill(trunk, with: .color(Color(hex: "#8A5A34")))
 
         let cx = w / 2 + lean * 0.5
+        // (x비율, y비율, 반지름비율) — 아래쪽 잎 뭉치를 더해 중간까지 채운다
         let blobs: [(CGFloat, CGFloat, CGFloat)] = [
-            (0, -0.1, 0.34), (-0.22, 0.06, 0.26), (0.22, 0.06, 0.26)
+            (0,     -0.10, 0.34),
+            (-0.24,  0.05, 0.27), (0.24,  0.05, 0.27),
+            (-0.15,  0.20, 0.23), (0.15,  0.20, 0.23),
+            (0,      0.30, 0.20)
         ]
+        let palette = [main, Color(hex: "#2F7F5B"), sub,
+                       Color(hex: "#357F5E"), main, Color(hex: "#2A6E50")]
         for (i, b) in blobs.enumerated() {
             let r = w * b.2 * rng.next(0.92, 1.04)
             let bx = cx + b.0 * w
             let by = trunkTop + b.1 * h
             ctx.fill(Path(ellipseIn: CGRect(x: bx - r, y: by - r, width: r * 2, height: r * 2)),
-                     with: .color(i == 0 ? main : (i == 1 ? Color(hex: "#2F7F5B") : sub)))
+                     with: .color(palette[i % palette.count]))
         }
     }
 }

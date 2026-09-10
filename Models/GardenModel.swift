@@ -46,9 +46,9 @@ enum PlantKind: Int, CaseIterable {
     /// 난이도 순서대로 키가 커진다 — 새싹이 가장 낮고 나무가 가장 높다
     var heightFactor: CGFloat {
         switch self {
-        case .sprout:   return 0.56
-        case .flower:   return 0.72
-        case .mushroom: return 0.85
+        case .sprout:   return 0.42
+        case .flower:   return 0.70
+        case .mushroom: return 0.80
         case .tree:     return 1.0
         }
     }
