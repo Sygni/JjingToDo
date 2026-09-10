@@ -84,9 +84,9 @@ struct GardenView: View {
             ProgressView(value: rank.progress)
                 .tint(Color(hex: "#3E9B6E"))
             HStack {
-                Text("심은 식물 \(rank.planted)그루")
+                Text("심은 식물 \(rank.planted)포기")
                 Spacer()
-                Text("다음 단계까지 \(rank.remaining)그루")
+                Text("다음 단계까지 \(rank.remaining)포기")
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -96,7 +96,7 @@ struct GardenView: View {
                     Text("최고 연속 \(streak.best)일")
                     Spacer()
                     if streak.atRiskToday {
-                        Text("오늘 아직 0그루").foregroundStyle(Color(hex: "#C0562F"))
+                        Text("오늘 아직 0포기").foregroundStyle(Color(hex: "#C0562F"))
                     }
                 }
                 .font(.caption2)
@@ -247,7 +247,7 @@ struct GardenView: View {
                 }
             }
             HStack(spacing: 6) {
-                Text("올해 \(total)그루").font(.caption).foregroundStyle(.secondary)
+                Text("올해 \(total)포기").font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Text("적음").font(.caption2).foregroundStyle(.secondary)
                 ForEach(0..<5) { i in

@@ -16,7 +16,7 @@ struct PointGuideView: View {
                 row("🍄", "어려움 · 버섯",      "500 pts")
                 row("🌳", "매우 어려움 · 나무", "1,000 pts")
 
-                Text("완료하면 난이도에 맞는 식물이 정원에 심겨요. 나무는 '매우 어려움'을 해야만 자랍니다.")
+                Text("완료하면 난이도에 맞는 식물이 심겨요. 나무는 '매우 어려움'을 해야만 자랍니다.")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 2)
@@ -37,6 +37,51 @@ struct PointGuideView: View {
                     Text("매일 02:00 리셋, 당일 12:00까지 지정 가능")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 2)
+            }
+
+            // MARK: - 정원 등급
+            Section(header: sectionHeader("leaf.fill", "정원 등급")) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("할 일을 완료할 때마다 정원에 식물이 한 포기 심겨요.")
+                        .font(.subheadline)
+                    Text("난이도는 어떤 식물이 심길지만 정하고, 등급은 종류와 상관없이 심은 포기 수로 올라갑니다. 포인트를 써도 등급은 내려가지 않아요.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 2)
+
+                ForEach(GardenRank.titles.indices, id: \.self) { i in
+                    let tier = GardenRank.titles[i]
+                    let need = GardenRank.requirement(forStage: tier.minStage)
+                    HStack {
+                        Text(tier.name)
+                            .font(.subheadline)
+                            .frame(width: 60, alignment: .leading)
+                        Text("\(tier.minStage)단계~")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(need == 0 ? "시작" : "\(need)포기")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Image(systemName: "flame.fill").foregroundColor(Color(hex: "#E2703A"))
+                        Text("연속 보너스").font(.subheadline)
+                    }
+                    Text("하루에 하나라도 완료하면 연속이 이어져요 (02:00 기준).")
+                        .font(.caption).foregroundColor(.secondary)
+                    Text("완료 포인트에 +연속일수 × 10 추가")
+                        .font(.caption).foregroundColor(.secondary)
+                    Text("연속 7일마다 그날 가장 어려운 식물이 ✨희귀종으로")
+                        .font(.caption).foregroundColor(Color(hex: "#8B6BB1"))
+                    Text("연속이 끊겨도 이미 심은 식물과 최고 기록은 그대로 남습니다.")
+                        .font(.caption).foregroundColor(.secondary)
                 }
                 .padding(.vertical, 2)
             }

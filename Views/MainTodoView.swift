@@ -313,7 +313,7 @@ struct MainTodoView: View {
                         ProgressView(value: rank.progress)
                             .tint(Color(hex: "#3E9B6E"))
                         HStack {
-                            Text("심은 식물 \(rank.planted)그루")
+                            Text("심은 식물 \(rank.planted)포기")
                             Spacer()
                             Text("다음까지 \(rank.remaining)")
                         }
@@ -327,7 +327,7 @@ struct MainTodoView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     if today.count > 0 {
-                        Text("· 오늘 \(today.count)그루")
+                        Text("· 오늘 \(today.count)포기")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }

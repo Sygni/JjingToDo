@@ -63,29 +63,45 @@ struct PlantView: View {
 
     // MARK: 종류별 그리기
 
+    /// 뾰족한 끝을 가진 잎 — 원점에서 +x 방향으로 자란다
+    private func leafPath(length: CGFloat, width: CGFloat) -> Path {
+        var p = Path()
+        p.move(to: .zero)
+        p.addQuadCurve(to: CGPoint(x: length, y: 0),
+                       control: CGPoint(x: length * 0.45, y: -width * 0.62))
+        p.addQuadCurve(to: .zero,
+                       control: CGPoint(x: length * 0.45, y: width * 0.62))
+        return p
+    }
+
+    private func placeLeaf(_ path: Path, at point: CGPoint, angle: CGFloat) -> Path {
+        path.applying(CGAffineTransform(rotationAngle: angle)
+            .concatenating(CGAffineTransform(translationX: point.x, y: point.y)))
+    }
+
+    /// 새싹 — 짧은 줄기 끝에 떡잎 두 장이 V자로. 🌱 모양에 가깝게
     private func drawSprout(_ ctx: inout GraphicsContext, w: CGFloat, h: CGFloat,
                             lean: CGFloat, rng: inout PlantRandom) {
-        let topY = h * rng.next(0.18, 0.34)
+        let topY = h * rng.next(0.36, 0.46)
+        let topX = w / 2 + lean * 0.6
+
         var stem = Path()
         stem.move(to: CGPoint(x: w / 2, y: h))
-        stem.addQuadCurve(to: CGPoint(x: w / 2 + lean, y: topY),
-                          control: CGPoint(x: w / 2 + lean * 0.4, y: h * 0.6))
-        ctx.stroke(stem, with: .color(stemColor), style: StrokeStyle(lineWidth: max(1.2, w * 0.07), lineCap: .round))
+        stem.addQuadCurve(to: CGPoint(x: topX, y: topY),
+                          control: CGPoint(x: w / 2 + lean * 0.2, y: h * 0.72))
+        ctx.stroke(stem, with: .color(stemColor),
+                   style: StrokeStyle(lineWidth: max(1.3, w * 0.075), lineCap: .round))
 
-        let leafCount = Int(rng.next(2, 3.99))
-        for i in 0..<leafCount {
-            let t = CGFloat(i + 1) / CGFloat(leafCount + 1)
-            let y = h - (h - topY) * t
-            let side: CGFloat = (i % 2 == 0) ? -1 : 1
-            let lw = w * rng.next(0.22, 0.34)
-            let rect = CGRect(x: w / 2 + lean * t - lw / 2 + side * lw * 0.55,
-                              y: y - lw * 0.22, width: lw, height: lw * 0.44)
-            var leaf = Path(ellipseIn: rect)
-            leaf = leaf.applying(CGAffineTransform(translationX: -rect.midX, y: -rect.midY)
-                .concatenating(CGAffineTransform(rotationAngle: side * -0.5))
-                .concatenating(CGAffineTransform(translationX: rect.midX, y: rect.midY)))
-            ctx.fill(leaf, with: .color(i % 2 == 0 ? main : sub))
-        }
+        let top = CGPoint(x: topX, y: topY)
+        let len = w * rng.next(0.34, 0.42)
+        let thick = len * rng.next(0.62, 0.78)
+
+        // 좌우 떡잎 — 위쪽 바깥으로 벌어진다
+        let spread = rng.next(0.34, 0.52)   // 벌어지는 정도
+        ctx.fill(placeLeaf(leafPath(length: len, width: thick), at: top,
+                           angle: -(.pi / 2) - spread), with: .color(main))
+        ctx.fill(placeLeaf(leafPath(length: len * rng.next(0.9, 1.05), width: thick), at: top,
+                           angle: -(.pi / 2) + spread), with: .color(sub))
     }
 
     private func drawFlower(_ ctx: inout GraphicsContext, w: CGFloat, h: CGFloat,
@@ -97,9 +113,9 @@ struct PlantView: View {
                           control: CGPoint(x: w / 2 + lean * 0.3, y: h * 0.65))
         ctx.stroke(stem, with: .color(stemColor), style: StrokeStyle(lineWidth: max(1.1, w * 0.06), lineCap: .round))
 
-        let lw = w * 0.26
-        let leafRect = CGRect(x: w / 2 + lean * 0.4 - lw * 0.1, y: h * 0.62, width: lw, height: lw * 0.42)
-        ctx.fill(Path(ellipseIn: leafRect), with: .color(Color(hex: "#8FBF4D")))
+        let leafAt = CGPoint(x: w / 2 + lean * 0.35, y: h * 0.66)
+        ctx.fill(placeLeaf(leafPath(length: w * 0.3, width: w * 0.17), at: leafAt, angle: -0.55),
+                 with: .color(Color(hex: "#8FBF4D")))
 
         let cx = w / 2 + lean
         let cy = topY
@@ -176,9 +192,19 @@ struct DayPotView: View {
     /// 화분·흙까지 그릴지 (월간처럼 작을 땐 흙만)
     var showsPot: Bool = true
 
-    private var visible: [PlantKind] {
+    /// 화분이 작으면 적게 — 좁은 칸에 여러 그루를 욱여넣지 않는다
+    private func capacity(width: CGFloat) -> Int {
+        switch width {
+        case ..<46:  return 2
+        case ..<70:  return 3
+        case ..<130: return 4
+        default:     return 5
+        }
+    }
+
+    private func visible(width: CGFloat) -> [PlantKind] {
         // 어려운 것부터 보여줘야 나무가 가려지지 않는다
-        Array(day.plants.sorted { $0.rawValue > $1.rawValue }.prefix(5))
+        Array(day.plants.sorted { $0.rawValue > $1.rawValue }.prefix(capacity(width: width)))
     }
 
     var body: some View {
@@ -187,6 +213,8 @@ struct DayPotView: View {
             let h = geo.size.height
             let soilH = h * (showsPot ? 0.26 : 0.14)
             let plantArea = h - soilH
+            let shown = visible(width: w)
+            let hidden = day.plants.count - shown.count
 
             ZStack(alignment: .bottom) {
                 if day.moss > 0 {
@@ -196,7 +224,7 @@ struct DayPotView: View {
                         .offset(y: -soilH * 0.55)
                 }
 
-                if visible.isEmpty {
+                if shown.isEmpty {
                     // 아무것도 심지 않은 날 — 화분이 엎어져 있다
                     PotShape()
                         .fill(Color(hex: "#B08968").opacity(0.35))
@@ -204,17 +232,19 @@ struct DayPotView: View {
                         .frame(width: w * 0.44, height: soilH * (showsPot ? 0.9 : 1.6))
                         .offset(y: -soilH * (showsPot ? 0.95 : 0.85))
                 } else {
-                    let n = visible.count
-                    ForEach(Array(visible.enumerated()), id: \.offset) { idx, kind in
-                        let slot = n == 1 ? 0.5 : CGFloat(idx) / CGFloat(n - 1)
-                        let x = w * (0.22 + slot * 0.56)
-                        // 개수가 많을수록 조금씩 작게 그려 넘치지 않게
-                        let scale = 1.0 - CGFloat(n) * 0.06
-                        let ph = plantArea * (kind == .tree ? 0.95 : 0.82) * scale
+                    let n = shown.count
+                    // 전체 폭의 88%를 나눠 쓰게 해서 그루 수가 늘어도 겹치지 않는다
+                    let slotW = w * 0.88 / CGFloat(n)
+                    let plantW = min(w * 0.5, slotW * 1.15)
+                    let heightScale = n <= 2 ? 1.0 : 1.0 - CGFloat(n - 2) * 0.07
+
+                    ForEach(Array(shown.enumerated()), id: \.offset) { idx, kind in
+                        let x = w * 0.06 + slotW * (CGFloat(idx) + 0.5)
+                        let ph = plantArea * (kind == .tree ? 0.95 : 0.82) * heightScale
                         PlantView(kind: kind,
                                   seed: plantSeed(date: day.date, index: idx),
                                   isRare: day.hasRarePlant && idx == 0)
-                            .frame(width: w * 0.5 * scale, height: ph)
+                            .frame(width: plantW, height: ph)
                             .position(x: x, y: h - soilH - ph / 2)
                     }
                 }
@@ -232,6 +262,16 @@ struct DayPotView: View {
             }
             // 식물이 없으면 ZStack이 화분 높이로 줄어들어 위로 떠버린다 — 높이를 고정
             .frame(width: w, height: h, alignment: .bottom)
+            .overlay(alignment: .topTrailing) {
+                if hidden > 0, w >= 46 {
+                    Text("+\(hidden)")
+                        .font(.system(size: max(8, w * 0.13), weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 3)
+                        .background(Capsule().fill(Color(.systemBackground).opacity(0.7)))
+                        .padding(2)
+                }
+            }
         }
     }
 }
