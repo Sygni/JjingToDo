@@ -82,7 +82,10 @@ struct PlantView: View {
     /// 새싹 — 짧은 줄기 끝에 떡잎 두 장이 V자로. 🌱 모양에 가깝게
     private func drawSprout(_ ctx: inout GraphicsContext, w: CGFloat, h: CGFloat,
                             lean: CGFloat, rng: inout PlantRandom) {
-        let topY = h * rng.next(0.36, 0.46)
+        let spread = rng.next(0.36, 0.5)
+        let len = min(w * 0.46, h * 0.5)
+        // 잎이 위로 뻗는 만큼을 빼서 줄기 끝을 정하면 잎 끝이 항상 프레임 상단에 닿는다
+        let topY = len * cos(spread) + h * 0.05
         let topX = w / 2 + lean * 0.6
 
         var stem = Path()
@@ -93,11 +96,9 @@ struct PlantView: View {
                    style: StrokeStyle(lineWidth: max(1.3, w * 0.075), lineCap: .round))
 
         let top = CGPoint(x: topX, y: topY)
-        let len = w * rng.next(0.34, 0.42)
         let thick = len * rng.next(0.62, 0.78)
 
         // 좌우 떡잎 — 위쪽 바깥으로 벌어진다
-        let spread = rng.next(0.34, 0.52)   // 벌어지는 정도
         ctx.fill(placeLeaf(leafPath(length: len, width: thick), at: top,
                            angle: -(.pi / 2) - spread), with: .color(main))
         ctx.fill(placeLeaf(leafPath(length: len * rng.next(0.9, 1.05), width: thick), at: top,
@@ -106,7 +107,9 @@ struct PlantView: View {
 
     private func drawFlower(_ ctx: inout GraphicsContext, w: CGFloat, h: CGFloat,
                             lean: CGFloat, rng: inout PlantRandom) {
-        let topY = h * rng.next(0.26, 0.4)
+        let ring = min(w * 0.16, h * 0.18)
+        let pr = min(w * rng.next(0.15, 0.2), h * 0.2)
+        let topY = ring + pr * 0.5 + h * 0.04
         var stem = Path()
         stem.move(to: CGPoint(x: w / 2, y: h))
         stem.addQuadCurve(to: CGPoint(x: w / 2 + lean, y: topY),
@@ -120,8 +123,6 @@ struct PlantView: View {
         let cx = w / 2 + lean
         let cy = topY
         let petals = Int(rng.next(5, 6.99))
-        let pr = w * rng.next(0.15, 0.2)
-        let ring = w * 0.16
         for i in 0..<petals {
             let a = (CGFloat(i) / CGFloat(petals)) * .pi * 2 + rng.next(-0.1, 0.1)
             let rect = CGRect(x: cx + cos(a) * ring - pr / 2, y: cy + sin(a) * ring - pr / 2,
@@ -134,15 +135,16 @@ struct PlantView: View {
 
     private func drawMushroom(_ ctx: inout GraphicsContext, w: CGFloat, h: CGFloat,
                               lean: CGFloat, rng: inout PlantRandom) {
-        let capY = h * rng.next(0.34, 0.48)
+        let capW = w * rng.next(0.62, 0.82)
+        let capH = min(capW * rng.next(0.5, 0.66), h * 0.36)
+        // 2차 곡선의 꼭대기는 제어점의 약 3/4 지점
+        let capY = capH * 1.28 + h * 0.03
         let stemW = w * rng.next(0.15, 0.21)
         let stem = Path(roundedRect: CGRect(x: w / 2 + lean * 0.5 - stemW / 2, y: capY,
                                             width: stemW, height: h - capY),
                         cornerRadius: stemW * 0.4)
         ctx.fill(stem, with: .color(sub))
 
-        let capW = w * rng.next(0.62, 0.82)
-        let capH = capW * rng.next(0.5, 0.66)
         let cx = w / 2 + lean * 0.5
         var cap = Path()
         cap.move(to: CGPoint(x: cx - capW / 2, y: capY))
@@ -164,7 +166,8 @@ struct PlantView: View {
     private func drawTree(_ ctx: inout GraphicsContext, w: CGFloat, h: CGFloat,
                           lean: CGFloat, rng: inout PlantRandom) {
         let trunkW = w * rng.next(0.13, 0.18)
-        let trunkTop = h * rng.next(0.44, 0.56)
+        let canopyR = min(w * 0.34, h * 0.34)
+        let trunkTop = canopyR + h * 0.13
         let trunk = Path(roundedRect: CGRect(x: w / 2 - trunkW / 2, y: trunkTop,
                                              width: trunkW, height: h - trunkTop),
                          cornerRadius: trunkW * 0.3)
@@ -175,7 +178,7 @@ struct PlantView: View {
             (0, -0.1, 0.34), (-0.22, 0.06, 0.26), (0.22, 0.06, 0.26)
         ]
         for (i, b) in blobs.enumerated() {
-            let r = w * b.2 * rng.next(0.9, 1.1)
+            let r = w * b.2 * rng.next(0.92, 1.04)
             let bx = cx + b.0 * w
             let by = trunkTop + b.1 * h
             ctx.fill(Path(ellipseIn: CGRect(x: bx - r, y: by - r, width: r * 2, height: r * 2)),
@@ -192,13 +195,12 @@ struct DayPotView: View {
     /// 화분·흙까지 그릴지 (월간처럼 작을 땐 흙만)
     var showsPot: Bool = true
 
-    /// 화분이 작으면 적게 — 좁은 칸에 여러 그루를 욱여넣지 않는다
+    /// 하루 5포기 정도는 빽빽해도 보여준다 — 그날 많이 한 게 보이는 게 낫다
     private func capacity(width: CGFloat) -> Int {
         switch width {
-        case ..<46:  return 2
-        case ..<70:  return 3
-        case ..<130: return 4
-        default:     return 5
+        case ..<38:  return 4
+        case ..<120: return 5
+        default:     return 6
         }
     }
 
@@ -233,14 +235,16 @@ struct DayPotView: View {
                         .offset(y: -soilH * (showsPot ? 0.95 : 0.85))
                 } else {
                     let n = shown.count
-                    // 전체 폭의 88%를 나눠 쓰게 해서 그루 수가 늘어도 겹치지 않는다
-                    let slotW = w * 0.88 / CGFloat(n)
-                    let plantW = min(w * 0.5, slotW * 1.15)
-                    let heightScale = n <= 2 ? 1.0 : 1.0 - CGFloat(n - 2) * 0.07
+                    // 전체 폭의 92%를 나눠 쓰게 해서 포기 수가 늘어도 겹치지 않는다
+                    let slotW = w * 0.92 / CGFloat(n)
+                    let plantW = min(w * 0.52, slotW * 1.2)
+                    // 빽빽할수록 살짝만 낮춘다 (너무 줄이면 키 순서가 뭉개진다)
+                    let heightScale = n <= 3 ? 1.0 : 1.0 - CGFloat(n - 3) * 0.04
 
                     ForEach(Array(shown.enumerated()), id: \.offset) { idx, kind in
-                        let x = w * 0.06 + slotW * (CGFloat(idx) + 0.5)
-                        let ph = plantArea * (kind == .tree ? 0.95 : 0.82) * heightScale
+                        let x = w * 0.04 + slotW * (CGFloat(idx) + 0.5)
+                        // 난이도 순으로 키가 커진다 (새싹 < 꽃 < 버섯 < 나무)
+                        let ph = plantArea * kind.heightFactor * heightScale
                         PlantView(kind: kind,
                                   seed: plantSeed(date: day.date, index: idx),
                                   isRare: day.hasRarePlant && idx == 0)
@@ -263,7 +267,7 @@ struct DayPotView: View {
             // 식물이 없으면 ZStack이 화분 높이로 줄어들어 위로 떠버린다 — 높이를 고정
             .frame(width: w, height: h, alignment: .bottom)
             .overlay(alignment: .topTrailing) {
-                if hidden > 0, w >= 46 {
+                if hidden > 0, w >= 40 {
                     Text("+\(hidden)")
                         .font(.system(size: max(8, w * 0.13), weight: .semibold))
                         .foregroundStyle(.secondary)
