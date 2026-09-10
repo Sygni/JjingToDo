@@ -78,8 +78,10 @@ struct PointGuideView: View {
                         .font(.caption).foregroundColor(.secondary)
                     Text("완료 포인트에 +연속일수 × 10 추가")
                         .font(.caption).foregroundColor(.secondary)
-                    Text("연속 7일마다 그날 가장 어려운 식물이 ✨희귀종으로")
-                        .font(.caption).foregroundColor(Color(hex: "#8B6BB1"))
+                    Text("연속 7일마다 그날 가장 어려운 식물이 ✨보랏빛 희귀종으로")
+                        .font(.caption).foregroundColor(Color(hex: "#8E63C4"))
+                    Text("단계가 오른 날에는 승급시킨 식물이 ✨황금빛으로 남아요")
+                        .font(.caption).foregroundColor(Color(hex: "#B8860B"))
                     Text("연속이 끊겨도 이미 심은 식물과 최고 기록은 그대로 남습니다.")
                         .font(.caption).foregroundColor(.secondary)
                 }

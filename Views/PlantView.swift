@@ -25,12 +25,17 @@ func plantSeed(date: Date, index: Int) -> UInt64 {
     UInt64(abs(Int(date.timeIntervalSince1970)) % 1_000_000) &* 97 &+ UInt64(index &* 31 &+ 7)
 }
 
+enum PlantVariant {
+    case normal
+    case rare      // 연속 7일 — 보라빛
+    case golden    // 등급 상승 — 황금빛
+}
+
 /// 식물 한 그루. height가 클수록 크게 자란다.
 struct PlantView: View {
     let kind: PlantKind
     var seed: UInt64 = 1
-    /// 희귀종 — 연속 보상. 색이 달라지고 반짝임이 붙는다
-    var isRare: Bool = false
+    var variant: PlantVariant = .normal
 
     var body: some View {
         GeometryReader { geo in
@@ -47,19 +52,53 @@ struct PlantView: View {
                 }
             }
             .overlay(alignment: .topTrailing) {
-                if isRare {
+                switch variant {
+                case .normal:
+                    EmptyView()
+                case .rare:
                     Image(systemName: "sparkle")
                         .font(.system(size: max(7, w * 0.22)))
-                        .foregroundStyle(Color(hex: "#F2B705"))
+                        .foregroundStyle(Color(hex: "#A87BE0"))
                         .offset(x: -w * 0.05, y: h * 0.04)
+                case .golden:
+                    Image(systemName: "sparkles")
+                        .font(.system(size: max(8, w * 0.26)))
+                        .foregroundStyle(Color(hex: "#E8B23A"))
+                        .offset(x: -w * 0.02, y: h * 0.02)
                 }
             }
         }
     }
 
-    private var stemColor: Color { isRare ? Color(hex: "#5AA469") : Color(hex: "#6BA33A") }
-    private var main: Color { isRare ? Color(hex: "#B98CE0") : kind.mainColor }
-    private var sub: Color { isRare ? Color(hex: "#DCC6F2") : kind.subColor }
+    private var stemColor: Color {
+        switch variant {
+        case .normal: return Color(hex: "#6BA33A")
+        case .rare:   return Color(hex: "#5AA469")
+        case .golden: return Color(hex: "#9C8A3E")
+        }
+    }
+    private var main: Color {
+        switch variant {
+        case .normal: return kind.mainColor
+        case .rare:   return Color(hex: "#B98CE0")
+        case .golden: return Color(hex: "#E8B23A")
+        }
+    }
+    private var sub: Color {
+        switch variant {
+        case .normal: return kind.subColor
+        case .rare:   return Color(hex: "#DCC6F2")
+        case .golden: return Color(hex: "#F7DE93")
+        }
+    }
+    /// 나무 수관처럼 여러 단계가 필요한 곳에서 쓰는 색
+    private func shade(_ level: Int) -> Color {
+        switch variant {
+        case .normal: return [kind.mainColor, Color(hex: "#2F7F5B"), kind.subColor][level % 3]
+        case .rare:   return [Color(hex: "#B98CE0"), Color(hex: "#8E63C4"), Color(hex: "#DCC6F2")][level % 3]
+        case .golden: return [Color(hex: "#E8B23A"), Color(hex: "#C9922A"), Color(hex: "#F7DE93")][level % 3]
+        }
+    }
 
     // MARK: 종류별 그리기
 
@@ -103,13 +142,23 @@ struct PlantView: View {
                            angle: -(.pi / 2) - spread), with: .color(main))
         ctx.fill(placeLeaf(leafPath(length: len * rng.next(0.9, 1.05), width: thick), at: top,
                            angle: -(.pi / 2) + spread), with: .color(sub))
+
+        // 가끔 작은 잎이 하나 더 — 같은 종이라도 조금씩 다르게 보이도록
+        if rng.next() > 0.55 {
+            let side: CGFloat = rng.next() > 0.5 ? 1 : -1
+            let at = CGPoint(x: topX - lean * 0.2, y: topY + (h - topY) * rng.next(0.3, 0.5))
+            ctx.fill(placeLeaf(leafPath(length: len * 0.52, width: thick * 0.6), at: at,
+                               angle: side > 0 ? -0.5 : .pi + 0.5),
+                     with: .color(side > 0 ? sub : main))
+        }
     }
 
     private func drawFlower(_ ctx: inout GraphicsContext, w: CGFloat, h: CGFloat,
                             lean: CGFloat, rng: inout PlantRandom) {
-        let ring = min(w * 0.16, h * 0.18)
-        let pr = min(w * rng.next(0.15, 0.2), h * 0.2)
-        let topY = ring + pr * 0.5 + h * 0.04
+        // 링 반지름보다 꽃잎이 크면 서로 뭉쳐 개수가 안 보인다 — 링을 넓히고 꽃잎은 작게
+        let ring = min(w * rng.next(0.25, 0.29), h * 0.3)
+        let pr = min(w * rng.next(0.13, 0.16), h * 0.16)
+        let topY = ring + pr * 0.62 + h * 0.04
         var stem = Path()
         stem.move(to: CGPoint(x: w / 2, y: h))
         stem.addQuadCurve(to: CGPoint(x: w / 2 + lean, y: topY),
@@ -130,28 +179,34 @@ struct PlantView: View {
         let cy = topY
         let petals = Int(rng.next(7, 9.99))
         for i in 0..<petals {
-            let a = (CGFloat(i) / CGFloat(petals)) * .pi * 2 + rng.next(-0.06, 0.06)
-            let rect = CGRect(x: cx + cos(a) * ring - pr / 2, y: cy + sin(a) * ring - pr / 2,
-                              width: pr, height: pr)
-            ctx.fill(Path(ellipseIn: rect), with: .color(i % 2 == 0 ? main : sub))
+            let a = (CGFloat(i) / CGFloat(petals)) * .pi * 2 + rng.next(-0.05, 0.05)
+            // 바깥을 향해 길쭉한 타원 — 원보다 꽃잎처럼 읽힌다
+            let rect = CGRect(x: ring - pr * 0.62, y: -pr * 0.42,
+                              width: pr * 1.24, height: pr * 0.84)
+            let petal = Path(ellipseIn: rect)
+                .applying(CGAffineTransform(rotationAngle: a)
+                    .concatenating(CGAffineTransform(translationX: cx, y: cy)))
+            ctx.fill(petal, with: .color(i % 2 == 0 ? main : sub))
         }
-        ctx.fill(Path(ellipseIn: CGRect(x: cx - w * 0.08, y: cy - w * 0.08, width: w * 0.16, height: w * 0.16)),
+        let coreR = min(ring * 0.42, w * 0.09)
+        ctx.fill(Path(ellipseIn: CGRect(x: cx - coreR, y: cy - coreR,
+                                        width: coreR * 2, height: coreR * 2)),
                  with: .color(Color(hex: "#F2C744")))
     }
 
     private func drawMushroom(_ ctx: inout GraphicsContext, w: CGFloat, h: CGFloat,
                               lean: CGFloat, rng: inout PlantRandom) {
-        let capW = w * rng.next(0.82, 0.98)
-        let capH = min(capW * rng.next(0.56, 0.72), h * 0.46)
+        let capW = w * rng.next(0.9, 1.0)
+        let capH = min(capW * rng.next(0.62, 0.78), h * 0.52)
         // 2차 곡선의 꼭대기는 제어점의 약 3/4 지점
         let capY = capH * 1.28 + h * 0.03
         let stemW = capW * rng.next(0.3, 0.38)
-        let stem = Path(roundedRect: CGRect(x: w / 2 + lean * 0.5 - stemW / 2, y: capY,
+        let stem = Path(roundedRect: CGRect(x: w / 2 + lean * 0.25 - stemW / 2, y: capY,
                                             width: stemW, height: h - capY),
                         cornerRadius: stemW * 0.4)
         ctx.fill(stem, with: .color(sub))
 
-        let cx = w / 2 + lean * 0.5
+        let cx = w / 2 + lean * 0.25
         var cap = Path()
         cap.move(to: CGPoint(x: cx - capW / 2, y: capY))
         cap.addQuadCurve(to: CGPoint(x: cx + capW / 2, y: capY),
@@ -187,14 +242,14 @@ struct PlantView: View {
             (-0.15,  0.20, 0.23), (0.15,  0.20, 0.23),
             (0,      0.30, 0.20)
         ]
-        let palette = [main, Color(hex: "#2F7F5B"), sub,
-                       Color(hex: "#357F5E"), main, Color(hex: "#2A6E50")]
-        for (i, b) in blobs.enumerated() {
-            let r = w * b.2 * rng.next(0.92, 1.04)
-            let bx = cx + b.0 * w
-            let by = trunkTop + b.1 * h
+
+        let usedBlobs = Array(blobs.prefix(Int(rng.next(5, 6.99))))
+        for (i, b) in usedBlobs.enumerated() {
+            let r = w * b.2 * rng.next(0.9, 1.08)
+            let bx = cx + b.0 * w + rng.next(-0.04, 0.04) * w
+            let by = trunkTop + b.1 * h + rng.next(-0.03, 0.03) * h
             ctx.fill(Path(ellipseIn: CGRect(x: bx - r, y: by - r, width: r * 2, height: r * 2)),
-                     with: .color(palette[i % palette.count]))
+                     with: .color(shade(i)))
         }
     }
 }
@@ -216,9 +271,13 @@ struct DayPotView: View {
         }
     }
 
-    private func visible(width: CGFloat) -> [PlantKind] {
-        // 어려운 것부터 보여줘야 나무가 가려지지 않는다
-        Array(day.plants.sorted { $0.rawValue > $1.rawValue }.prefix(capacity(width: width)))
+    private func visible(width: CGFloat) -> [PlantedItem] {
+        // 등급을 올려준 식물과 어려운 것부터 — 특별한 게 가려지지 않게
+        let sorted = day.plants.sorted {
+            if $0.isLevelUp != $1.isLevelUp { return $0.isLevelUp }
+            return $0.kind.rawValue > $1.kind.rawValue
+        }
+        return Array(sorted.prefix(capacity(width: width)))
     }
 
     var body: some View {
@@ -253,13 +312,14 @@ struct DayPotView: View {
                     // 빽빽할수록 살짝만 낮춘다 (너무 줄이면 키 순서가 뭉개진다)
                     let heightScale = n <= 3 ? 1.0 : 1.0 - CGFloat(n - 3) * 0.04
 
-                    ForEach(Array(shown.enumerated()), id: \.offset) { idx, kind in
+                    ForEach(Array(shown.enumerated()), id: \.offset) { idx, item in
                         let x = w * 0.04 + slotW * (CGFloat(idx) + 0.5)
                         // 난이도 순으로 키가 커진다 (새싹 < 꽃 < 버섯 < 나무)
-                        let ph = plantArea * kind.heightFactor * heightScale
-                        PlantView(kind: kind,
+                        let ph = plantArea * item.kind.heightFactor * heightScale
+                        PlantView(kind: item.kind,
                                   seed: plantSeed(date: day.date, index: idx),
-                                  isRare: day.hasRarePlant && idx == 0)
+                                  variant: item.isLevelUp ? .golden
+                                           : (day.hasRarePlant && idx == 0 ? .rare : .normal))
                             .frame(width: plantW, height: ph)
                             .position(x: x, y: h - soilH - ph / 2)
                     }

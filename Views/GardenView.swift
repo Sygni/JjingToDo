@@ -288,10 +288,11 @@ struct GardenView: View {
     private func summaryText(_ day: DayGarden) -> String {
         var parts: [String] = []
         for kind in PlantKind.allCases.reversed() {
-            let n = day.plants.filter { $0 == kind }.count
+            let n = day.plants.filter { $0.kind == kind }.count
             if n > 0 { parts.append("\(kind.label) \(n)") }
         }
         if day.moss > 0 { parts.append("이끼 \(day.moss)") }
+        if day.plants.contains(where: { $0.isLevelUp }) { parts.append("✨등급 상승") }
         if day.hasRarePlant { parts.append("✨희귀종") }
         return parts.joined(separator: " · ")
     }

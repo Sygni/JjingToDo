@@ -47,7 +47,7 @@ enum PlantKind: Int, CaseIterable {
     var heightFactor: CGFloat {
         switch self {
         case .sprout:   return 0.42
-        case .flower:   return 0.70
+        case .flower:   return 0.55
         case .mushroom: return 0.80
         case .tree:     return 1.0
         }
@@ -65,10 +65,17 @@ enum PlantKind: Int, CaseIterable {
 
 // MARK: - 하루치 정원
 
+/// 심긴 식물 한 포기
+struct PlantedItem {
+    let kind: PlantKind
+    /// 이 식물을 심으면서 등급(단계)이 올라갔다 → 황금빛
+    var isLevelUp: Bool = false
+}
+
 struct DayGarden: Identifiable {
-    let date: Date          // 02:00 기준으로 맞춘 그날의 시작
-    var plants: [PlantKind] // 완료한 할 일들
-    var moss: Int           // 추구미 액션 수 — 바닥 이끼
+    let date: Date            // 02:00 기준으로 맞춘 그날의 시작
+    var plants: [PlantedItem] // 완료한 할 일들
+    var moss: Int             // 추구미 액션 수 — 바닥 이끼
     /// 그날까지 이어진 연속 일수 (희귀종 판정용)
     var streakAtDay: Int = 0
 
@@ -111,6 +118,19 @@ struct GardenRank {
 
     static func title(forStage stage: Int) -> String {
         titles.last { stage >= $0.minStage }?.name ?? "씨앗"
+    }
+
+    /// 단계가 올라가는 지점들 (몇 번째 식물이 승급을 시켰는지 판별용)
+    static func stageThresholds(upTo total: Int) -> Set<Int> {
+        var result = Set<Int>()
+        var stage = 2
+        while stage < 999 {
+            let need = requirement(forStage: stage)
+            if need > total { break }
+            if need > 0 { result.insert(need) }
+            stage += 1
+        }
+        return result
     }
 
     static func make(planted: Int) -> GardenRank {
@@ -174,11 +194,18 @@ enum GardenStats {
     static func build(tasks: [TaskEntity], moss: [ChugumiActionEntity]) -> [Date: DayGarden] {
         var map: [Date: DayGarden] = [:]
 
-        for task in tasks where task.isCompleted {
-            guard let done = task.completedAt, isCounted(done) else { continue }
-            let day = dayStart(of: done)
-            let kind = PlantKind(reward: RewardLevel(rawValue: Int(task.rewardLevelRaw)) ?? .easy)
-            map[day, default: DayGarden(date: day, plants: [], moss: 0)].plants.append(kind)
+        // 완료 순서대로 번호를 매겨야 몇 번째 식물이 등급을 올렸는지 알 수 있다
+        let done = tasks.compactMap { task -> (Date, PlantKind)? in
+            guard task.isCompleted, let at = task.completedAt, isCounted(at) else { return nil }
+            return (at, PlantKind(reward: RewardLevel(rawValue: Int(task.rewardLevelRaw)) ?? .easy))
+        }.sorted { $0.0 < $1.0 }
+
+        let milestones = GardenRank.stageThresholds(upTo: done.count)
+
+        for (i, entry) in done.enumerated() {
+            let day = dayStart(of: entry.0)
+            let item = PlantedItem(kind: entry.1, isLevelUp: milestones.contains(i + 1))
+            map[day, default: DayGarden(date: day, plants: [], moss: 0)].plants.append(item)
         }
 
         for action in moss {
