@@ -340,6 +340,35 @@ struct MainTodoView: View {
         .buttonStyle(.plain)
     }
 
+    /// 입력줄에 들어가는 마감일 토글 — 날짜를 고르면 버튼에 그대로 표시된다
+    private var dueDateButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showDueDatePicker.toggle()
+                // 피커를 열면 기본값(오늘)을 실제 값으로 반영, 닫으면 해제
+                newTaskDueDate = showDueDatePicker ? (newTaskDueDate ?? Date()) : nil
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: newTaskDueDate != nil ? "calendar.badge.checkmark" : "calendar")
+                    .font(.system(size: 14))
+                if let due = newTaskDueDate {
+                    Text(dueDateDisplay(due)).font(.caption2)
+                }
+            }
+            .foregroundColor(newTaskDueDate != nil ? Color(hex: "#3E9B6E") : .secondary)
+            .padding(.horizontal, newTaskDueDate != nil ? 9 : 11)
+            .frame(height: 38)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(newTaskDueDate != nil
+                          ? Color(hex: "#3E9B6E").opacity(0.12)
+                          : Color(.secondarySystemBackground))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
     private func inputSection(newTask: Binding<String>, viewContext: NSManagedObjectContext, selectedRewardLevel: RewardLevel, saveContext: @escaping () -> Void) ->  some View {
         let canAdd = !newTask.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty
 
@@ -351,6 +380,8 @@ struct MainTodoView: View {
                     .padding(.vertical, 9)
                     .background(Color(.secondarySystemBackground))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                dueDateButton
 
                 Button {
                     guard canAdd else { return }
@@ -382,48 +413,23 @@ struct MainTodoView: View {
                 .animation(.easeInOut(duration: 0.15), value: canAdd)
             }
 
-            // 심을 식물(난이도) — 고른 순간 무엇이 자랄지 보인다
-            Picker("난이도", selection: $selectedRewardLevel) {
-                ForEach(RewardLevel.allCases, id: \.self) { level in
-                    Text(level.label).tag(level)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-
+            // 난이도(심을 식물) + 카테고리를 한 줄에
             HStack(spacing: 8) {
+                Picker("난이도", selection: $selectedRewardLevel) {
+                    ForEach(RewardLevel.allCases, id: \.self) { level in
+                        Text(level.label).tag(level)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .frame(maxWidth: .infinity)
+
                 Picker("타입", selection: $selectedTaskType) {
                     ForEach(TaskType.allCases, id: \.self) { type in
                         Image(systemName: type.icon).tag(type)
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
-                .frame(maxWidth: .infinity)
-
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showDueDatePicker.toggle()
-                        // 피커를 열면 기본값(오늘)을 실제 값으로 반영, 닫으면 해제
-                        newTaskDueDate = showDueDatePicker ? (newTaskDueDate ?? Date()) : nil
-                    }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: newTaskDueDate != nil ? "calendar.badge.checkmark" : "calendar")
-                            .font(.caption)
-                        if let due = newTaskDueDate {
-                            Text(dueDateDisplay(due)).font(.caption2)
-                        }
-                    }
-                    .foregroundColor(newTaskDueDate != nil ? Color(hex: "#3E9B6E") : .secondary)
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 7)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(newTaskDueDate != nil
-                                  ? Color(hex: "#3E9B6E").opacity(0.12)
-                                  : Color(.secondarySystemBackground))
-                    )
-                }
-                .buttonStyle(.plain)
+                .frame(width: 108)
             }
 
             if showDueDatePicker {
@@ -601,10 +607,6 @@ struct MainTodoView: View {
                     Text("🎲").font(.caption2)
                 }
 
-                Image(systemName: task.taskType.icon)
-                    .font(.caption)
-                    .foregroundColor(.secondary.opacity(task.isCompleted ? 0.4 : 0.7))
-
                 if let due = task.dueDate {
                     Text(dueDateDisplay(due))
                         .font(.caption2)
@@ -620,6 +622,12 @@ struct MainTodoView: View {
                             )
                         )
                 }
+
+                // 카테고리는 항상 맨 끝 — 마감일 유무와 상관없이 오른쪽 정렬이 유지된다
+                Image(systemName: task.taskType.icon)
+                    .font(.caption)
+                    .foregroundColor(.secondary.opacity(task.isCompleted ? 0.4 : 0.7))
+                    .frame(width: 16)
             }
             .padding(.vertical, 2)
         }
