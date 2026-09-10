@@ -341,50 +341,89 @@ struct MainTodoView: View {
     }
 
     private func inputSection(newTask: Binding<String>, viewContext: NSManagedObjectContext, selectedRewardLevel: RewardLevel, saveContext: @escaping () -> Void) ->  some View {
-        VStack(spacing: 8) {
-            HStack {
+        let canAdd = !newTask.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty
+
+        return VStack(spacing: 10) {
+            HStack(spacing: 8) {
                 TextField("할 일을 입력하세요", text: newTask)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
                     .submitLabel(.done)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
 
                 Button {
-                    withAnimation {
+                    guard canAdd else { return }
+                    let task = TaskEntity(context: viewContext)
+                    task.id = UUID()
+                    task.title = newTask.wrappedValue.trimmingCharacters(in: .whitespaces)
+                    task.isCompleted = false
+                    task.createdAt = Date()
+                    task.rewardLevelRaw = Int16(selectedRewardLevel.rawValue)
+                    task.taskType = selectedTaskType
+                    task.dueDate = newTaskDueDate
+
+                    newTask.wrappedValue = ""
+                    newTaskDueDate = nil
+                    showDueDatePicker = false
+                    saveContext()
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                } label: {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 38, height: 38)
+                        .background(
+                            Circle().fill(canAdd ? Color(hex: "#3E9B6E") : Color.secondary.opacity(0.3))
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(!canAdd)
+                .animation(.easeInOut(duration: 0.15), value: canAdd)
+            }
+
+            // 심을 식물(난이도) — 고른 순간 무엇이 자랄지 보인다
+            Picker("난이도", selection: $selectedRewardLevel) {
+                ForEach(RewardLevel.allCases, id: \.self) { level in
+                    Text(level.label).tag(level)
+                }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+
+            HStack(spacing: 8) {
+                Picker("타입", selection: $selectedTaskType) {
+                    ForEach(TaskType.allCases, id: \.self) { type in
+                        Image(systemName: type.icon).tag(type)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .frame(maxWidth: .infinity)
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
                         showDueDatePicker.toggle()
-                        if showDueDatePicker {
-                            // 피커를 열면 기본값(오늘)을 실제 값으로 반영
-                            if newTaskDueDate == nil { newTaskDueDate = Date() }
-                        } else {
-                            // 피커를 닫으면 마감일 해제
-                            newTaskDueDate = nil
-                        }
+                        // 피커를 열면 기본값(오늘)을 실제 값으로 반영, 닫으면 해제
+                        newTaskDueDate = showDueDatePicker ? (newTaskDueDate ?? Date()) : nil
                     }
                 } label: {
-                    Image(systemName: newTaskDueDate != nil ? "calendar.badge.checkmark" : "calendar")
-                        .foregroundColor(newTaskDueDate != nil ? .accentColor : .secondary)
-                }
-
-                Button("추가") {
-                    if !newTask.wrappedValue.isEmpty {
-                        let task = TaskEntity(context: viewContext)
-                        task.id = UUID()
-                        task.title = newTask.wrappedValue
-                        task.isCompleted = false
-                        task.createdAt = Date()
-                        task.rewardLevelRaw = Int16(selectedRewardLevel.rawValue)
-                        task.taskType = selectedTaskType
-                        task.dueDate = newTaskDueDate
-
-                        newTask.wrappedValue = ""
-                        newTaskDueDate = nil
-                        showDueDatePicker = false
-                        saveContext()
+                    HStack(spacing: 5) {
+                        Image(systemName: newTaskDueDate != nil ? "calendar.badge.checkmark" : "calendar")
+                            .font(.caption)
+                        if let due = newTaskDueDate {
+                            Text(dueDateDisplay(due)).font(.caption2)
+                        }
                     }
+                    .foregroundColor(newTaskDueDate != nil ? Color(hex: "#3E9B6E") : .secondary)
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 7)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(newTaskDueDate != nil
+                                  ? Color(hex: "#3E9B6E").opacity(0.12)
+                                  : Color(.secondarySystemBackground))
+                    )
                 }
-                .padding(.horizontal)
-                .padding(.vertical, 6)
-                .background(Color(hex: "#68BBE3"))
-                .foregroundColor(.white)
-                .cornerRadius(8)
+                .buttonStyle(.plain)
             }
 
             if showDueDatePicker {
@@ -396,37 +435,19 @@ struct MainTodoView: View {
                     ),
                     displayedComponents: .date
                 )
-                .datePickerStyle(.compact)
+                .datePickerStyle(.graphical)
                 .labelsHidden()
+                .frame(maxHeight: 320)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
-
-            HStack {
-                Picker("타입", selection: $selectedTaskType) {
-                    ForEach(TaskType.allCases, id: \.self) { type in
-                        Label(type.label, systemImage: type.icon)
-                            .tag(type)
-                    }
-                }
-                .frame(width: 120, height: 30)
-                .pickerStyle(SegmentedPickerStyle())
-
-                Picker("난이도", selection: $selectedRewardLevel) {
-                    Text(RewardLevel.easy.label)
-                        .tag(RewardLevel.easy)
-                    Text(RewardLevel.normal.label)
-                        .tag(RewardLevel.normal)
-                    Text(RewardLevel.hard.label)
-                        .tag(RewardLevel.hard)
-                    Text(RewardLevel.veryHard.label)
-                        .tag(RewardLevel.veryHard)
-                }
-                .frame(width: 200, height: 30)
-                .pickerStyle(SegmentedPickerStyle())
-            }
-            .padding(.horizontal)
         }
-        .padding()
+        .padding(14)
+        .background(Color(.systemBackground).opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.secondary.opacity(0.15), lineWidth: 0.5)
+        )
     }
 
     private func rewardLevelPicker(selectedRewardLevel: Binding<RewardLevel>) -> some View {
@@ -441,6 +462,16 @@ struct MainTodoView: View {
         .pickerStyle(SegmentedPickerStyle())
     }
     
+    /// 오늘이거나 지난 마감 — 알약 배경으로 강조
+    private func dueIsUrgent(_ date: Date, isCompleted: Bool) -> Bool {
+        guard !isCompleted else { return false }
+        let cal = Calendar.current
+        let days = cal.dateComponents([.day],
+                                      from: cal.startOfDay(for: Date()),
+                                      to: cal.startOfDay(for: date)).day ?? 0
+        return days <= 0
+    }
+
     private func dueDateColor(_ date: Date, isCompleted: Bool) -> Color {
         if isCompleted { return .secondary }
         let cal = Calendar.current
@@ -542,34 +573,55 @@ struct MainTodoView: View {
     ) -> some View {
         // Wrapping in a plain view makes swipeActions behave correctly
         VStack {
-            HStack {
+            HStack(spacing: 10) {
                 Button { toggleTask(task) } label: {
                     Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                        .foregroundColor(task.isCompleted ? task.reward.color : .gray)
-                        // 20250427 리스트 글자 부분에 long-press 시에 체크한 걸로 처리되는 문제 해결
-                        // 아래 라인 제거
-                        /*.onTapGesture {
-                            toggleTask(task)  // ✅ 여기만 반응하게
-                        }*/
+                        .font(.system(size: 20))
+                        .foregroundColor(task.isCompleted ? task.reward.color : Color.secondary.opacity(0.5))
                 }
                 .buttonStyle(.plain)    // ✅ 버튼 눌렀을 때 깜빡이는 효과 없애기 (있으면 거슬림)
-                
-                Image(systemName: task.taskType.icon)
-                    .foregroundColor(task.taskType.color)
+
+                // 난이도 = 정원에 심길 식물. 글자색 대신 이 배지가 난이도를 나타낸다
+                Text(task.reward.label)
+                    .font(.system(size: 13))
+                    .frame(width: 26, height: 26)
+                    .background(
+                        Circle().fill(task.reward.color.opacity(task.isCompleted ? 0.07 : 0.16))
+                    )
+                    .opacity(task.isCompleted ? 0.5 : 1)
+
                 Text(task.safeTitle)
                     .strikethrough(task.isCompleted)
-                    .foregroundColor(task.isCompleted ? .gray : task.reward.color)
-                Spacer()
+                    .foregroundColor(task.isCompleted ? .secondary : .primary)
+                    .lineLimit(2)
+
+                Spacer(minLength: 4)
+
                 if task.isToday && task.isAutoAssigned {
-                    Text("🎲")
-                        .font(.caption)
+                    Text("🎲").font(.caption2)
                 }
+
+                Image(systemName: task.taskType.icon)
+                    .font(.caption)
+                    .foregroundColor(.secondary.opacity(task.isCompleted ? 0.4 : 0.7))
+
                 if let due = task.dueDate {
                     Text(dueDateDisplay(due))
-                        .font(.caption)
+                        .font(.caption2)
+                        .fontWeight(dueIsUrgent(due, isCompleted: task.isCompleted) ? .semibold : .regular)
                         .foregroundColor(dueDateColor(due, isCompleted: task.isCompleted))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule().fill(
+                                dueIsUrgent(due, isCompleted: task.isCompleted)
+                                ? dueDateColor(due, isCompleted: task.isCompleted).opacity(0.13)
+                                : Color.clear
+                            )
+                        )
                 }
             }
+            .padding(.vertical, 2)
         }
         .contentShape(Rectangle()) // ⬅️ 이거 매우 중요! 전체 행을 터치 영역으로 지정
         .swipeActions(edge: .leading) {
