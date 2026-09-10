@@ -127,6 +127,29 @@ struct StreakInfo {
 
 enum GardenStats {
 
+    /// 정원을 시작한 날. 이전 기록은 세지 않는다.
+    /// 완료 기록 자체는 지우지 않으므로 언제든 되돌릴 수 있다.
+    static let startDateKey = "gardenStartDate"
+
+    static var startDate: Date? {
+        let t = UserDefaults.standard.double(forKey: startDateKey)
+        return t > 0 ? Date(timeIntervalSince1970: t) : nil
+    }
+
+    /// 오늘부터 다시 시작
+    static func resetStart(to date: Date = Date()) {
+        UserDefaults.standard.set(dayStart(of: date).timeIntervalSince1970, forKey: startDateKey)
+    }
+
+    static func clearStart() {
+        UserDefaults.standard.removeObject(forKey: startDateKey)
+    }
+
+    private static func isCounted(_ date: Date) -> Bool {
+        guard let start = startDate else { return true }
+        return dayStart(of: date) >= dayStart(of: start)
+    }
+
     /// 02:00 기준으로 맞춘 "그날"의 시작 시각
     static func dayStart(of date: Date) -> Date {
         let cal = Calendar.current
@@ -142,14 +165,14 @@ enum GardenStats {
         var map: [Date: DayGarden] = [:]
 
         for task in tasks where task.isCompleted {
-            guard let done = task.completedAt else { continue }
+            guard let done = task.completedAt, isCounted(done) else { continue }
             let day = dayStart(of: done)
             let kind = PlantKind(reward: RewardLevel(rawValue: Int(task.rewardLevelRaw)) ?? .easy)
             map[day, default: DayGarden(date: day, plants: [], moss: 0)].plants.append(kind)
         }
 
         for action in moss {
-            guard let ts = action.timestamp else { continue }
+            guard let ts = action.timestamp, isCounted(ts) else { continue }
             let day = dayStart(of: ts)
             map[day, default: DayGarden(date: day, plants: [], moss: 0)].moss += 1
         }
@@ -172,13 +195,16 @@ enum GardenStats {
 
     /// 누적 심은 식물 수 = 완료한 할 일 수
     static func plantedCount(tasks: [TaskEntity]) -> Int {
-        tasks.filter { $0.isCompleted && $0.completedAt != nil }.count
+        tasks.filter { task in
+            guard task.isCompleted, let done = task.completedAt else { return false }
+            return isCounted(done)
+        }.count
     }
 
     /// 연속 일수 — 하루에 하나라도 완료하면 유지. 02:00 기준.
     static func streak(tasks: [TaskEntity]) -> StreakInfo {
         let days = Set(tasks.compactMap { task -> Date? in
-            guard task.isCompleted, let done = task.completedAt else { return nil }
+            guard task.isCompleted, let done = task.completedAt, isCounted(done) else { return nil }
             return dayStart(of: done)
         }).sorted()
 

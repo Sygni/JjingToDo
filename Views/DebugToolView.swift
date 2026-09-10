@@ -22,6 +22,7 @@ struct DebugToolView: View {
 
     // 독서 탭 — 책등 표지 색
     @AppStorage("spineUsesCoverColor") private var spineUsesCoverColor = true
+    @State private var showGardenResetAlert = false
     @State private var isBackfillingCovers = false
     @State private var backfillStatus: String? = nil
 
@@ -34,6 +35,31 @@ struct DebugToolView: View {
     var body: some View {
         NavigationView {
             List {
+                Section {
+                    Button("🌱 포인트·정원 초기화") {
+                        showGardenResetAlert = true
+                    }
+                    .foregroundColor(.orange)
+
+                    if let start = GardenStats.startDate {
+                        HStack {
+                            Text("정원 시작일").foregroundColor(.secondary)
+                            Spacer()
+                            Text(startDateText(start))
+                        }
+                        .font(.footnote)
+                        Button("전체 기록 다시 세기") {
+                            GardenStats.clearStart()
+                            refreshTrigger = UUID()
+                        }
+                        .font(.footnote)
+                    }
+                } header: {
+                    Text("🌿 정원")
+                } footer: {
+                    Text("포인트를 0으로 되돌리고 오늘부터 다시 셉니다. 완료한 할 일 자체는 지우지 않아서 언제든 되돌릴 수 있어요.")
+                }
+
                 Section(header: Text("💣 전체 리셋")) {
                     Button("모든 데이터 삭제") {
                         resetAllData()
@@ -124,7 +150,32 @@ struct DebugToolView: View {
                 }
             }
             .navigationTitle("설정")
+            .alert("포인트와 정원을 초기화할까요?", isPresented: $showGardenResetAlert) {
+                Button("취소", role: .cancel) {}
+                Button("초기화", role: .destructive) { resetGarden() }
+            } message: {
+                Text("포인트가 0이 되고 정원이 오늘부터 다시 시작돼요. 완료한 할 일은 지워지지 않습니다.")
+            }
         }
+    }
+
+    /// 포인트를 0으로 되돌리고 정원을 오늘부터 시작 (완료 기록은 보존)
+    private func resetGarden() {
+        let req = NSFetchRequest<UserEntity>(entityName: "UserEntity")
+        if let user = try? viewContext.fetch(req).first {
+            user.points = 0
+            user.lifetimePoints = 0
+            try? viewContext.save()
+        }
+        GardenStats.resetStart()
+        refreshTrigger = UUID()
+    }
+
+    private func startDateText(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ko_KR")
+        f.dateFormat = "yyyy년 M월 d일"
+        return f.string(from: date)
     }
 
     /// coverURL 없는 책들을 제목으로 재검색해서 표지 URL 채우기

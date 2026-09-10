@@ -197,10 +197,12 @@ struct DayPotView: View {
                 }
 
                 if visible.isEmpty {
-                    Circle()
-                        .fill(Color.secondary.opacity(0.18))
-                        .frame(width: max(3, w * 0.08), height: max(3, w * 0.08))
-                        .offset(y: -soilH - h * 0.06)
+                    // 아무것도 심지 않은 날 — 화분이 엎어져 있다
+                    PotShape()
+                        .fill(Color(hex: "#B08968").opacity(0.35))
+                        .rotationEffect(.degrees(180))
+                        .frame(width: w * 0.44, height: soilH * (showsPot ? 0.9 : 1.6))
+                        .offset(y: -soilH * (showsPot ? 0.95 : 0.85))
                 } else {
                     let n = visible.count
                     ForEach(Array(visible.enumerated()), id: \.offset) { idx, kind in
@@ -228,6 +230,8 @@ struct DayPotView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 2))
                 }
             }
+            // 식물이 없으면 ZStack이 화분 높이로 줄어들어 위로 떠버린다 — 높이를 고정
+            .frame(width: w, height: h, alignment: .bottom)
         }
     }
 }
