@@ -156,8 +156,9 @@ struct PlantView: View {
     private func drawFlower(_ ctx: inout GraphicsContext, w: CGFloat, h: CGFloat,
                             lean: CGFloat, rng: inout PlantRandom) {
         // 링 반지름보다 꽃잎이 크면 서로 뭉쳐 개수가 안 보인다 — 링을 넓히고 꽃잎은 작게
-        let ring = min(w * rng.next(0.25, 0.29), h * 0.3)
-        let pr = min(w * rng.next(0.13, 0.16), h * 0.16)
+        // 링을 줄이고 꽃잎을 키워 안쪽 끝이 가운데 노란 부분에 닿게 한다
+        let ring = min(w * rng.next(0.21, 0.24), h * 0.26)
+        let pr = min(w * rng.next(0.18, 0.21), h * 0.2)
         let topY = ring + pr * 0.62 + h * 0.04
         var stem = Path()
         stem.move(to: CGPoint(x: w / 2, y: h))
