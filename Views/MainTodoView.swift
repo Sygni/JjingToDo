@@ -50,6 +50,17 @@ struct MainTodoView: View {
     // Due date
     @State private var showDueDatePicker: Bool = false
     @State private var newTaskDueDate: Date? = nil
+
+    // 정원
+    @FetchRequest(entity: ChugumiActionEntity.entity(), sortDescriptors: [])
+    private var mossActions: FetchedResults<ChugumiActionEntity>
+    @State private var showGarden = false
+
+    // 완료 피드백
+    @State private var showEarnedPop = false
+    @State private var lastEarned = 0
+    @State private var lastMultiplier = 1
+    @State private var lastWasAuto = false
     
     let taskKey = "savedTasks"
     let pointKey = "savedPoints"
@@ -221,11 +232,27 @@ struct MainTodoView: View {
                 .sheet(isPresented: $showEditSheet) {
                     editSheet
                 }
+                .sheet(isPresented: $showGarden) {
+                    GardenView()
+                }
                 .padding()
 
                 Spacer()
             }
         }        
+        .overlay(alignment: .top) {
+            if showEarnedPop {
+                earnedPop
+                    .padding(.top, 76)
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                    .allowsHitTesting(false)
+            }
+        }
+        .animation(.spring(response: 0.32, dampingFraction: 0.6), value: showEarnedPop)
+        .onChange(of: showEarnedPop) { _, shown in
+            guard shown else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) { showEarnedPop = false }
+        }
         .alert(todayLimitMessage, isPresented: $showTodayLimitAlert) {
             Button("확인", role: .cancel) { }
         }
@@ -233,22 +260,84 @@ struct MainTodoView: View {
     }
 
     // 20250327 MARK: - View Components
-    private func headerSection(points: Int32, totalPoints: Int, viewContext: NSManagedObjectContext) -> some View {
-        VStack(spacing: 8) {
-            Text(" 🐰찡냥 포인트: \(user.points)💎 ")
-                .font(.headline)
-
-            ProgressView(value: Double(points), total: 10000)
-                .accentColor(Color(hex: "#FEDE00"))
-                .padding(.horizontal)
-            
-            // 20250419 일단 빼기..
-            /*
-            Text("누적 기록: \(totalPoints)")
-                .font(.subheadline)
-                .foregroundColor(.gray)
-             */
+    /// 완료 순간 피드백 — 배수를 받았다면 그 사실을 눈에 보이게
+    private var earnedPop: some View {
+        VStack(spacing: 4) {
+            Text("+\(lastEarned) 💎")
+                .font(.title2.bold())
+                .foregroundColor(Color(hex: "#3E9B6E"))
+            if lastMultiplier > 1 {
+                Text(lastWasAuto ? "🎲 랜덤 미션 ×3" : "🏆 오늘의 미션 ×2")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(Color(hex: "#C0562F"))
+            }
         }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial, in: Capsule())
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 3)
+    }
+
+    /// 등급 + 연속 + 오늘의 화분. 탭하면 정원 전체가 열린다.
+    private func headerSection(points: Int32, totalPoints: Int, viewContext: NSManagedObjectContext) -> some View {
+        let all = Array(taskEntities)
+        let rank = GardenRank.make(planted: GardenStats.plantedCount(tasks: all))
+        let streak = GardenStats.streak(tasks: all)
+        let todayKey = GardenStats.today
+        let today = GardenStats.build(tasks: all, moss: Array(mossActions))[todayKey]
+            ?? DayGarden(date: todayKey, plants: [], moss: 0)
+
+        return Button {
+            showGarden = true
+        } label: {
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    DayPotView(day: today)
+                        .frame(width: 54, height: 62)
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack(spacing: 6) {
+                            Text(rank.title)
+                                .font(.subheadline.weight(.semibold))
+                            Text("\(rank.stage)단계")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            if streak.current > 0 {
+                                Label("\(streak.current)일", systemImage: "flame.fill")
+                                    .font(.caption)
+                                    .foregroundColor(Color(hex: "#E2703A"))
+                            }
+                        }
+                        ProgressView(value: rank.progress)
+                            .tint(Color(hex: "#3E9B6E"))
+                        HStack {
+                            Text("심은 식물 \(rank.planted)그루")
+                            Spacer()
+                            Text("다음까지 \(rank.remaining)")
+                        }
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    }
+                }
+
+                HStack(spacing: 6) {
+                    Text("💎 \(user.points)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    if today.count > 0 {
+                        Text("· 오늘 \(today.count)그루")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private func inputSection(newTask: Binding<String>, viewContext: NSManagedObjectContext, selectedRewardLevel: RewardLevel, saveContext: @escaping () -> Void) ->  some View {
@@ -538,9 +627,19 @@ struct MainTodoView: View {
                 task.bonusGranted = true
             }
 
-            earned = basePoint * multiplier
+            // ▸ 연속 보너스 — 챌린지와 같은 공식(+연속×10)
+            let streakBefore = GardenStats.streak(tasks: Array(taskEntities)).current
+            let streakBonus = min(streakBefore, 30) * 10
+
+            earned = basePoint * multiplier + streakBonus
             user.points += Int32(earned)
+            user.lifetimePoints += Int64(earned)   // 써도 줄지 않는 누적 기록
             totalPoints += earned
+            lastEarned = earned
+            lastMultiplier = multiplier
+            lastWasAuto = task.isAutoAssigned
+            showEarnedPop = true
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
             // ▸ 완료하면 오늘 큐 해제
             task.isToday = false
@@ -556,6 +655,7 @@ struct MainTodoView: View {
 
             let newPointTotal = max(Int(user.points) - earned, 0)
             user.points = Int32(newPointTotal)
+            user.lifetimePoints = max(0, user.lifetimePoints - Int64(earned))
             totalPoints = max(totalPoints - earned, 0)
                 
             // 만약 아직 만료되지 않은 "오늘의 할 일"이면 → 다시 되살림

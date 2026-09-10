@@ -14,6 +14,9 @@
 		27C8D235BF40429D9F5C1157 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1CA5D7B28A49BB9EAC9A7E /* Config.swift */; };
 		334C135EED404A569FBC8795 /* AppBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0903B8750C014839BB561323 /* AppBackground.swift */; };
 		349E5EFEC4DA4FFC9039045F /* ConfirmBookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D8CC3A97B743AEA3CF6F14 /* ConfirmBookView.swift */; };
+		CC00400600000000GARDEN06 /* GardenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00400500000000GARDEN05 /* GardenView.swift */; };
+		CC00400400000000GARDEN04 /* PlantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00400300000000GARDEN03 /* PlantView.swift */; };
+		CC00400200000000GARDEN02 /* GardenModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00400100000000GARDEN01 /* GardenModel.swift */; };
 		CC00300200000000CROPVW02 /* ImageCropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00300100000000CROPVW01 /* ImageCropView.swift */; };
 		38C83867E8D8410693700F21 /* BookTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F717E2FACB4574A4A07192 /* BookTheme.swift */; };
 		3B3E70DE2D9C05E900A18A90 /* CSVManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B3E70DD2D9C05E400A18A90 /* CSVManager.swift */; };
@@ -169,6 +172,9 @@
 		6D917C6917D94E21820E7BE3 /* HTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPClient.swift; sourceTree = "<group>"; };
 		7D1CA5D7B28A49BB9EAC9A7E /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		80D8CC3A97B743AEA3CF6F14 /* ConfirmBookView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmBookView.swift; sourceTree = "<group>"; };
+		CC00400500000000GARDEN05 /* GardenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GardenView.swift; sourceTree = "<group>"; };
+		CC00400300000000GARDEN03 /* PlantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlantView.swift; sourceTree = "<group>"; };
+		CC00400100000000GARDEN01 /* GardenModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GardenModel.swift; sourceTree = "<group>"; };
 		CC00300100000000CROPVW01 /* ImageCropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCropView.swift; sourceTree = "<group>"; };
 		93836876E3144821B598F79B /* DataModel 7.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "DataModel 7.xcdatamodel"; sourceTree = "<group>"; };
 		93836877E3144821B598F79C /* DataModel 8.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "DataModel 8.xcdatamodel"; sourceTree = "<group>"; };
@@ -318,6 +324,7 @@
 				021C54AE9D5740179CBFFE15 /* Book+CoreDataProperties.swift */,
 				DAE8D996CD6E4F499AEFBB25 /* BookSearchViewModel.swift */,
 				E3F717E2FACB4574A4A07192 /* BookTheme.swift */,
+				CC00400100000000GARDEN01 /* GardenModel.swift */,
 				3B5C5DB52DC10F9E0017B597 /* ChallengeEntity+CoreDataClass.swift */,
 				3B5C5DB62DC10F9E0017B597 /* ChallengeEntity+CoreDataProperties.swift */,
 				3BF6A9E62D9931D9008BCDE0 /* Model.swift */,
@@ -389,6 +396,8 @@
 				3B5C5DB12DB67DBB0017B597 /* ChallengeTabView.swift */,
 				3B5C5DB32DB686B10017B597 /* ChugumiBunnyButton.swift */,
 				80D8CC3A97B743AEA3CF6F14 /* ConfirmBookView.swift */,
+				CC00400500000000GARDEN05 /* GardenView.swift */,
+				CC00400300000000GARDEN03 /* PlantView.swift */,
 				CC00300100000000CROPVW01 /* ImageCropView.swift */,
 				3BF6A9FB2D9931D9008BCDE0 /* ContentView.swift */,
 				3BF6A9FC2D9931D9008BCDE0 /* DebugToolView.swift */,
@@ -595,6 +604,9 @@
 				334C135EED404A569FBC8795 /* AppBackground.swift in Sources */,
 				D71477161AD942298EA7A789 /* BarcodeScannerView.swift in Sources */,
 				349E5EFEC4DA4FFC9039045F /* ConfirmBookView.swift in Sources */,
+				CC00400600000000GARDEN06 /* GardenView.swift in Sources */,
+				CC00400400000000GARDEN04 /* PlantView.swift in Sources */,
+				CC00400200000000GARDEN02 /* GardenModel.swift in Sources */,
 				CC00300200000000CROPVW02 /* ImageCropView.swift in Sources */,
 				657F037633AE4F2E8E7AB73F /* AddBookManualView.swift in Sources */,
 				49BEDED0A7D147868EFF200A /* AddBookView.swift in Sources */,
