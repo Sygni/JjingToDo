@@ -11,10 +11,15 @@ struct PointGuideView: View {
 
             // MARK: - 투두 (할 일)
             Section(header: sectionHeader("flag.checkered", "할 일 포인트")) {
-                row("👶", "쉬움",       "100 pts")
-                row("🤓", "보통",       "300 pts")
-                row("🤯", "어려움",     "500 pts")
-                row("🔥", "매우 어려움", "1,000 pts")
+                row("🌱", "쉬움 · 새싹",       "100 pts")
+                row("🌸", "보통 · 꽃",          "300 pts")
+                row("🍄", "어려움 · 버섯",      "500 pts")
+                row("🌳", "매우 어려움 · 나무", "1,000 pts")
+
+                Text("완료하면 난이도에 맞는 식물이 정원에 심겨요. 나무는 '매우 어려움'을 해야만 자랍니다.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {

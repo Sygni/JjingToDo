@@ -54,12 +54,23 @@ enum RewardLevel: Int, Codable, CaseIterable {
         }
     }
 
+    /// 정원에 심기는 식물과 같은 순서 — 새싹 → 꽃 → 버섯 → 나무
     var label: String {
         switch self {
-        case .easy: return "👶"
-        case .normal: return "🤓"
-        case .hard: return "🤯"
-        case .veryHard: return "🔥"
+        case .easy: return "🌱"
+        case .normal: return "🌸"
+        case .hard: return "🍄"
+        case .veryHard: return "🌳"
+        }
+    }
+
+    /// 난이도 이름 (가이드·설명용)
+    var plantName: String {
+        switch self {
+        case .easy: return "새싹"
+        case .normal: return "꽃"
+        case .hard: return "버섯"
+        case .veryHard: return "나무"
         }
     }
 
