@@ -17,8 +17,8 @@ struct DebugToolView: View {
     @State private var showExportConfirmation = false
     @State private var showImportPicker = false
     @State private var importEntityType: String? = nil
-    @State private var exportURLs: [URL] = []
-    @State private var showExportPicker = false
+    /// 내보낼 파일 묶음. 시트를 이 값에 묶어야 뜨는 순간 파일 목록이 확실히 전달된다
+    @State private var exportItem: ExportItem? = nil
 
     // 독서 탭 — 책등 표지 색
     @AppStorage("spineUsesCoverColor") private var spineUsesCoverColor = true
@@ -89,12 +89,12 @@ struct DebugToolView: View {
                     Button("📤 CSV 백업(All Data)") {
                         let urls = buildExportURLs()
                         if !urls.isEmpty {
-                            exportURLs = urls
-                            showExportPicker = true
+                            exportItem = ExportItem(urls: urls)
                         }
                     }
-                    .sheet(isPresented: $showExportPicker) {
-                        DocumentExporter(urls: exportURLs, isPresented: $showExportPicker)
+                    // isPresented 방식은 첫 표시 때 이전(빈) 파일 목록으로 시트를 만들어 저장 버튼이 비활성화됐다
+                    .sheet(item: $exportItem) { item in
+                        DocumentExporter(urls: item.urls) { exportItem = nil }
                             .ignoresSafeArea()
                     }
 
@@ -403,11 +403,17 @@ struct ImportPickerPresenter: UIViewRepresentable {
 }
 
 // MARK: - Document Exporter (UIDocumentPickerViewController 래퍼)
+/// 내보낼 CSV 파일 묶음 — 시트 표시 단위
+struct ExportItem: Identifiable {
+    let id = UUID()
+    let urls: [URL]
+}
+
 struct DocumentExporter: UIViewControllerRepresentable {
     let urls: [URL]
-    @Binding var isPresented: Bool
+    let onFinish: () -> Void
 
-    func makeCoordinator() -> Coordinator { Coordinator(isPresented: $isPresented) }
+    func makeCoordinator() -> Coordinator { Coordinator(onFinish: onFinish) }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let picker = UIDocumentPickerViewController(forExporting: urls, asCopy: true)
@@ -419,10 +425,10 @@ struct DocumentExporter: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
-        @Binding var isPresented: Bool
-        init(isPresented: Binding<Bool>) { _isPresented = isPresented }
-        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { isPresented = false }
-        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { isPresented = false }
+        let onFinish: () -> Void
+        init(onFinish: @escaping () -> Void) { self.onFinish = onFinish }
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { onFinish() }
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { onFinish() }
     }
 }
 
