@@ -741,6 +741,7 @@ struct MainTodoView: View {
 
         //saveContext()
         try? viewContext.save()
+        GardenStats.publishWidgetSnapshot(context: viewContext)   // 홈 화면 위젯 갱신
     }
     
     func deleteTask(_ task: TaskEntity) {
@@ -787,23 +788,7 @@ extension UIApplication {
 }
 
 
-extension Color {
-    init(hex: String) {
-        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
-        if hexSanitized.hasPrefix("#") {
-            hexSanitized.remove(at: hexSanitized.startIndex)
-        }
-        
-        let scanner = Scanner(string: hexSanitized)
-        var rgb: UInt64 = 0
-        scanner.scanHexInt64(&rgb)
-        
-        let red = Double((rgb & 0xFF0000) >> 16) / 255.0
-        let green = Double((rgb & 0x00FF00) >> 8) / 255.0
-        let blue = Double(rgb & 0x0000FF) / 255.0
-        self.init(red: red, green: green, blue: blue)
-    }
-}
+// Color(hex:)는 위젯과 함께 쓰려고 Extensions/Color+Hex.swift로 옮겼다
 
 #Preview {
     let context = PersistenceController.preview.container.viewContext

@@ -10,111 +10,15 @@
 import Foundation
 import SwiftUI
 import CoreData
+import WidgetKit
 
-// MARK: - 식물 종류
+// MARK: - 앱 전용 연결
+// PlantKind·DayGarden 같은 순수 정원 타입은 위젯과 함께 쓰려고 GardenCore.swift로 옮겼다.
+// RewardLevel은 앱 전용 모델이라 이 연결만 여기에 남긴다.
 
-/// 난이도가 곧 식물 종류 — 어려운 할 일을 해야만 나무가 생긴다
-enum PlantKind: Int, CaseIterable {
-    case sprout   = 1   // 쉬움
-    case flower   = 2   // 보통
-    case mushroom = 3   // 어려움
-    case tree     = 4   // 매우 어려움
-
+extension PlantKind {
     init(reward: RewardLevel) {
         self = PlantKind(rawValue: reward.rawValue) ?? .sprout
-    }
-
-    var label: String {
-        switch self {
-        case .sprout:   return "새싹"
-        case .flower:   return "꽃"
-        case .mushroom: return "버섯"
-        case .tree:     return "나무"
-        }
-    }
-
-    /// 정원 색 — 앱 팔레트와 별개로 식물다운 톤
-    var mainColor: Color {
-        switch self {
-        case .sprout:   return Color(hex: "#8FBF4D")
-        case .flower:   return Color(hex: "#E88AAE")
-        case .mushroom: return Color(hex: "#D4633A")
-        case .tree:     return Color(hex: "#3E9B6E")
-        }
-    }
-
-    /// 난이도 순서대로 키가 커진다 — 새싹이 가장 낮고 나무가 가장 높다
-    var heightFactor: CGFloat {
-        switch self {
-        case .sprout:   return 0.42
-        case .flower:   return 0.55
-        case .mushroom: return 0.80
-        case .tree:     return 1.0
-        }
-    }
-
-    var subColor: Color {
-        switch self {
-        case .sprout:   return Color(hex: "#B9D98A")
-        case .flower:   return Color(hex: "#F6C3D6")
-        case .mushroom: return Color(hex: "#F2D3C4")
-        case .tree:     return Color(hex: "#2A7050")
-        }
-    }
-}
-
-// MARK: - 하루치 정원
-
-/// 심긴 식물 한 포기
-struct PlantedItem {
-    let kind: PlantKind
-    /// 이 식물을 심으면서 등급(단계)이 올라갔다 → 황금빛
-    var isLevelUp: Bool = false
-}
-
-struct DayGarden: Identifiable {
-    let date: Date            // 02:00 기준으로 맞춘 그날의 시작
-    var plants: [PlantedItem] // 완료한 할 일들
-    var moss: Int             // 추구미 액션 수 — 바닥 이끼
-    /// 그날까지 이어진 연속 일수 (희귀종 판정용)
-    var streakAtDay: Int = 0
-
-    var id: Date { date }
-    var isEmpty: Bool { plants.isEmpty && moss == 0 }
-    var count: Int { plants.count }
-
-    /// 연속 7일마다 그날 가장 높은 난이도의 식물이 희귀종이 된다
-    var hasRarePlant: Bool { streakAtDay > 0 && streakAtDay % 7 == 0 && !plants.isEmpty }
-}
-
-// MARK: - 식물 변종과 보여줄 순서
-
-enum PlantVariant {
-    case normal
-    case rare      // 연속 7일 — 보라빛
-    case golden    // 등급 상승 — 황금빛
-}
-
-/// 보여줄 순서와 변종이 정해진 한 포기
-struct OrderedPlant {
-    let item: PlantedItem
-    let variant: PlantVariant
-    /// 그날 안에서의 순서 — 모양 seed로도 쓰여 화분과 모아심기 화단에서 같은 모양이 나온다
-    let index: Int
-}
-
-extension DayGarden {
-    /// 등급을 올려준 식물과 어려운 것부터. 화분·모아심기 모두 이 규칙을 공유한다.
-    func orderedPlants() -> [OrderedPlant] {
-        let sorted = plants.sorted {
-            if $0.isLevelUp != $1.isLevelUp { return $0.isLevelUp }
-            return $0.kind.rawValue > $1.kind.rawValue
-        }
-        return sorted.enumerated().map { idx, item in
-            let variant: PlantVariant = item.isLevelUp ? .golden
-                : (hasRarePlant && idx == 0 ? .rare : .normal)
-            return OrderedPlant(item: item, variant: variant, index: idx)
-        }
     }
 }
 
@@ -211,12 +115,9 @@ enum GardenStats {
         return dayStart(of: date) >= dayStart(of: start)
     }
 
-    /// 02:00 기준으로 맞춘 "그날"의 시작 시각
+    /// 02:00 기준으로 맞춘 "그날"의 시작 시각 (위젯과 같은 계산을 쓰도록 GardenCalendar에 위임)
     static func dayStart(of date: Date) -> Date {
-        let cal = Calendar.current
-        let shifted = cal.date(byAdding: .hour, value: -2, to: date) ?? date
-        let base = cal.startOfDay(for: shifted)
-        return cal.date(byAdding: .hour, value: 2, to: base) ?? base
+        GardenCalendar.dayStart(of: date)
     }
 
     static var today: Date { dayStart(of: Date()) }
@@ -259,6 +160,25 @@ enum GardenStats {
             previous = day
         }
         return map
+    }
+
+    // MARK: 위젯
+
+    /// 이번 주 정원을 App Group에 넘기고 위젯을 새로 그리게 한다.
+    /// 위젯은 Core Data를 열지 않고 이 요약만 읽는다.
+    static func publishWidgetSnapshot(context: NSManagedObjectContext) {
+        let taskRequest: NSFetchRequest<TaskEntity> = TaskEntity.fetchRequest()
+        let mossRequest: NSFetchRequest<ChugumiActionEntity> = ChugumiActionEntity.fetchRequest()
+        let tasks = (try? context.fetch(taskRequest)) ?? []
+        let moss = (try? context.fetch(mossRequest)) ?? []
+        let map = build(tasks: tasks, moss: moss)
+
+        let start = GardenCalendar.weekStart(containing: Date())
+        let gardens = GardenCalendar.weekDays(from: start).map { day in
+            map[day] ?? DayGarden(date: day, plants: [], moss: 0)
+        }
+        GardenSnapshot(weekStart: start, gardens: gardens).save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     /// 누적 심은 식물 수 = 완료한 할 일 수

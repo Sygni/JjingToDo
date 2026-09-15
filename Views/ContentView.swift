@@ -61,6 +61,10 @@ struct ContentView: View {
                     print("🌞 scenePhase.active → todayQueue 포그라운드 체크")
                     TodayQueueManager.shared.performForegroundCheck()
                 }
+                // 위젯은 앱 데이터를 직접 못 읽으므로 앱을 열고 닫을 때마다 이번 주 정원을 넘겨준다
+                if newPhase == .active || newPhase == .background {
+                    GardenStats.publishWidgetSnapshot(context: viewContext)
+                }
             }
         } else {
             // 유저가 없으면 자동 생성

@@ -181,16 +181,9 @@ struct GardenView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
-    private var weekStart: Date {
-        let cal = Calendar.current
-        let comps = cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: anchor)
-        return GardenStats.dayStart(of: cal.date(from: comps) ?? anchor)
-    }
-    private var currentWeekStart: Date {
-        let cal = Calendar.current
-        let comps = cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
-        return GardenStats.dayStart(of: cal.date(from: comps) ?? Date())
-    }
+    // 주 시작은 위젯과 같은 계산을 쓴다 (GardenCalendar)
+    private var weekStart: Date { GardenCalendar.weekStart(containing: anchor) }
+    private var currentWeekStart: Date { GardenCalendar.weekStart(containing: Date()) }
 
     /// 한 주에 심은 식물을 한 화단에 모아 심은 모습
     private var weekView: some View {
