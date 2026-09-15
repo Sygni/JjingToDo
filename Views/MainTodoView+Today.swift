@@ -16,7 +16,7 @@ extension MainTodoView {
         return Calendar.current.isDateInToday(due)
     }
 
-    /// 오늘 할 일 — 자동배정 → 아주 중요 → 마감일있음(빠른순) → 마감일없음 순
+    /// 오늘 할 일 — 아주 중요 → 자동배정 → 마감일있음(빠른순) → 마감일없음 순
     var todayTasks: [TaskEntity] {
         taskEntities
             .filter { !$0.isCompleted && ($0.isToday || isDueToday($0)) }
@@ -34,10 +34,10 @@ extension MainTodoView {
             }
     }
 
-    /// 0: 자동배정(랜덤 미션은 항상 맨 위)  1: 아주 중요  2: 마감일 있음  3: 마감일 없음
+    /// 0: 아주 중요(랜덤 미션보다도 위)  1: 자동배정  2: 마감일 있음  3: 마감일 없음
     private func todayPriority(_ task: TaskEntity) -> Int {
-        if task.isAutoAssigned { return 0 }
-        if task.isImportant { return 1 }
+        if task.isImportant { return 0 }
+        if task.isAutoAssigned { return 1 }
         if task.dueDate != nil { return 2 }
         return 3
     }
