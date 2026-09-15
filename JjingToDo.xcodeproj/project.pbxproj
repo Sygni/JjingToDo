@@ -14,6 +14,7 @@
 		27C8D235BF40429D9F5C1157 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1CA5D7B28A49BB9EAC9A7E /* Config.swift */; };
 		334C135EED404A569FBC8795 /* AppBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0903B8750C014839BB561323 /* AppBackground.swift */; };
 		349E5EFEC4DA4FFC9039045F /* ConfirmBookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D8CC3A97B743AEA3CF6F14 /* ConfirmBookView.swift */; };
+		CC00500200000000PLOTVW02 /* GardenPlotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00500100000000PLOTVW01 /* GardenPlotView.swift */; };
 		CC00400600000000GARDEN06 /* GardenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00400500000000GARDEN05 /* GardenView.swift */; };
 		CC00400400000000GARDEN04 /* PlantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00400300000000GARDEN03 /* PlantView.swift */; };
 		CC00400200000000GARDEN02 /* GardenModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00400100000000GARDEN01 /* GardenModel.swift */; };
@@ -172,6 +173,7 @@
 		6D917C6917D94E21820E7BE3 /* HTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPClient.swift; sourceTree = "<group>"; };
 		7D1CA5D7B28A49BB9EAC9A7E /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		80D8CC3A97B743AEA3CF6F14 /* ConfirmBookView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmBookView.swift; sourceTree = "<group>"; };
+		CC00500100000000PLOTVW01 /* GardenPlotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GardenPlotView.swift; sourceTree = "<group>"; };
 		CC00400500000000GARDEN05 /* GardenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GardenView.swift; sourceTree = "<group>"; };
 		CC00400300000000GARDEN03 /* PlantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlantView.swift; sourceTree = "<group>"; };
 		CC00400100000000GARDEN01 /* GardenModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GardenModel.swift; sourceTree = "<group>"; };
@@ -396,6 +398,7 @@
 				3B5C5DB12DB67DBB0017B597 /* ChallengeTabView.swift */,
 				3B5C5DB32DB686B10017B597 /* ChugumiBunnyButton.swift */,
 				80D8CC3A97B743AEA3CF6F14 /* ConfirmBookView.swift */,
+				CC00500100000000PLOTVW01 /* GardenPlotView.swift */,
 				CC00400500000000GARDEN05 /* GardenView.swift */,
 				CC00400300000000GARDEN03 /* PlantView.swift */,
 				CC00300100000000CROPVW01 /* ImageCropView.swift */,
@@ -604,6 +607,7 @@
 				334C135EED404A569FBC8795 /* AppBackground.swift in Sources */,
 				D71477161AD942298EA7A789 /* BarcodeScannerView.swift in Sources */,
 				349E5EFEC4DA4FFC9039045F /* ConfirmBookView.swift in Sources */,
+				CC00500200000000PLOTVW02 /* GardenPlotView.swift in Sources */,
 				CC00400600000000GARDEN06 /* GardenView.swift in Sources */,
 				CC00400400000000GARDEN04 /* PlantView.swift in Sources */,
 				CC00400200000000GARDEN02 /* GardenModel.swift in Sources */,

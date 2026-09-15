@@ -192,22 +192,77 @@ struct GardenView: View {
         return GardenStats.dayStart(of: cal.date(from: comps) ?? Date())
     }
 
+    /// 한 주에 심은 식물을 한 화단에 모아 심은 모습
     private var weekView: some View {
         let cal = Calendar.current
+        let map = garden   // 계산 프로퍼티라 한 번만 만든다
         let days = (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: weekStart) }
-        return HStack(spacing: 6) {
-            ForEach(days, id: \.self) { d in
+            .map { d -> DayGarden in
                 let key = GardenStats.dayStart(of: d)
-                VStack(spacing: 4) {
-                    DayPotView(day: garden[key] ?? DayGarden(date: key, plants: [], moss: 0))
-                        .frame(height: 96)
-                    Text(shortWeekday(d)).font(.caption2).foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 6)
-                .frame(maxWidth: .infinity)
-                .background(Color(.secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                return map[key] ?? DayGarden(date: key, plants: [], moss: 0)
             }
+        let isEmpty = days.allSatisfy { $0.plants.isEmpty }
+
+        return VStack(spacing: 14) {
+            WeekPlotView(days: days, seedDate: weekStart)
+                .overlay {
+                    if isEmpty {
+                        Text("이번 주는 아직 비어 있어요")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            weekStats(days)
+        }
+        .padding(14)
+        .background(Color(hex: "#3E9B6E").opacity(0.07))
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    /// 모아심으면 요일 정보가 사라지므로 막대그래프로 보완
+    private func weekStats(_ days: [DayGarden]) -> some View {
+        let total = days.reduce(0) { $0 + $1.count }
+        let maxCount = max(1, days.map(\.count).max() ?? 1)
+        let todayKey = GardenStats.today
+
+        return VStack(spacing: 12) {
+            HStack(spacing: 10) {
+                Text("이번 주 \(total)포기")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                ForEach(PlantKind.allCases.reversed(), id: \.self) { kind in
+                    let n = days.reduce(0) { acc, d in acc + d.plants.filter { $0.kind == kind }.count }
+                    if n > 0 {
+                        HStack(spacing: 2) {
+                            Text(RewardLevel(rawValue: kind.rawValue)?.label ?? "")
+                            Text("\(n)")
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            HStack(alignment: .bottom, spacing: 8) {
+                ForEach(days) { day in
+                    let isToday = day.date == todayKey
+                    VStack(spacing: 4) {
+                        Text(day.count > 0 ? "\(day.count)" : " ")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(day.count > 0 ? Color(hex: "#3E9B6E") : Color.secondary.opacity(0.15))
+                            .frame(height: max(4, 52 * CGFloat(day.count) / CGFloat(maxCount)))
+                        Text(shortWeekday(day.date))
+                            .font(.caption2)
+                            .fontWeight(isToday ? .semibold : .regular)
+                            .foregroundStyle(isToday ? Color(hex: "#3E9B6E") : .secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: 88)
         }
     }
 

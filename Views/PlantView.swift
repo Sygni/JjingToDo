@@ -25,12 +25,6 @@ func plantSeed(date: Date, index: Int) -> UInt64 {
     UInt64(abs(Int(date.timeIntervalSince1970)) % 1_000_000) &* 97 &+ UInt64(index &* 31 &+ 7)
 }
 
-enum PlantVariant {
-    case normal
-    case rare      // 연속 7일 — 보라빛
-    case golden    // 등급 상승 — 황금빛
-}
-
 /// 식물 한 그루. height가 클수록 크게 자란다.
 struct PlantView: View {
     let kind: PlantKind
@@ -272,13 +266,8 @@ struct DayPotView: View {
         }
     }
 
-    private func visible(width: CGFloat) -> [PlantedItem] {
-        // 등급을 올려준 식물과 어려운 것부터 — 특별한 게 가려지지 않게
-        let sorted = day.plants.sorted {
-            if $0.isLevelUp != $1.isLevelUp { return $0.isLevelUp }
-            return $0.kind.rawValue > $1.kind.rawValue
-        }
-        return Array(sorted.prefix(capacity(width: width)))
+    private func visible(width: CGFloat) -> [OrderedPlant] {
+        Array(day.orderedPlants().prefix(capacity(width: width)))
     }
 
     var body: some View {
@@ -313,14 +302,13 @@ struct DayPotView: View {
                     // 빽빽할수록 살짝만 낮춘다 (너무 줄이면 키 순서가 뭉개진다)
                     let heightScale = n <= 3 ? 1.0 : 1.0 - CGFloat(n - 3) * 0.04
 
-                    ForEach(Array(shown.enumerated()), id: \.offset) { idx, item in
+                    ForEach(Array(shown.enumerated()), id: \.offset) { idx, op in
                         let x = w * 0.04 + slotW * (CGFloat(idx) + 0.5)
                         // 난이도 순으로 키가 커진다 (새싹 < 꽃 < 버섯 < 나무)
-                        let ph = plantArea * item.kind.heightFactor * heightScale
-                        PlantView(kind: item.kind,
-                                  seed: plantSeed(date: day.date, index: idx),
-                                  variant: item.isLevelUp ? .golden
-                                           : (day.hasRarePlant && idx == 0 ? .rare : .normal))
+                        let ph = plantArea * op.item.kind.heightFactor * heightScale
+                        PlantView(kind: op.item.kind,
+                                  seed: plantSeed(date: day.date, index: op.index),
+                                  variant: op.variant)
                             .frame(width: plantW, height: ph)
                             .position(x: x, y: h - soilH - ph / 2)
                     }

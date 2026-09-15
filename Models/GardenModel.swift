@@ -87,6 +87,37 @@ struct DayGarden: Identifiable {
     var hasRarePlant: Bool { streakAtDay > 0 && streakAtDay % 7 == 0 && !plants.isEmpty }
 }
 
+// MARK: - 식물 변종과 보여줄 순서
+
+enum PlantVariant {
+    case normal
+    case rare      // 연속 7일 — 보라빛
+    case golden    // 등급 상승 — 황금빛
+}
+
+/// 보여줄 순서와 변종이 정해진 한 포기
+struct OrderedPlant {
+    let item: PlantedItem
+    let variant: PlantVariant
+    /// 그날 안에서의 순서 — 모양 seed로도 쓰여 화분과 모아심기 화단에서 같은 모양이 나온다
+    let index: Int
+}
+
+extension DayGarden {
+    /// 등급을 올려준 식물과 어려운 것부터. 화분·모아심기 모두 이 규칙을 공유한다.
+    func orderedPlants() -> [OrderedPlant] {
+        let sorted = plants.sorted {
+            if $0.isLevelUp != $1.isLevelUp { return $0.isLevelUp }
+            return $0.kind.rawValue > $1.kind.rawValue
+        }
+        return sorted.enumerated().map { idx, item in
+            let variant: PlantVariant = item.isLevelUp ? .golden
+                : (hasRarePlant && idx == 0 ? .rare : .normal)
+            return OrderedPlant(item: item, variant: variant, index: idx)
+        }
+    }
+}
+
 // MARK: - 등급
 
 /// 칭호 + 단계. 단계는 무한히 올라가고 칭호는 구간마다 바뀐다.
