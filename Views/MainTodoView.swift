@@ -36,6 +36,7 @@ struct MainTodoView: View {
     @State private var editedDueDate: Date? = nil
     @State private var editedRewardLevel: RewardLevel = .easy
     @State private var editedTaskType: TaskType = .personal
+    @State private var editedIsImportant: Bool = false
     @State private var showEditSheet = false
     @State private var showEditDueDatePicker = false
     
@@ -518,6 +519,14 @@ struct MainTodoView: View {
                 Section("제목") {
                     TextField("할 일", text: $editedTitle)
                 }
+                Section {
+                    Toggle(isOn: $editedIsImportant) {
+                        Label("아주 중요", systemImage: "exclamationmark.circle")
+                    }
+                    .tint(Color(hex: "#D85A30"))
+                } footer: {
+                    Text("목록 맨 위에 고정되고 왼쪽에 강조선이 붙어요.")
+                }
                 Section("카테고리") {
                     Picker("카테고리", selection: $editedTaskType) {
                         ForEach(TaskType.allCases, id: \.self) { type in
@@ -568,6 +577,7 @@ struct MainTodoView: View {
                             task.dueDate = editedDueDate
                             task.rewardLevelRaw = Int16(editedRewardLevel.rawValue)
                             task.taskType = editedTaskType
+                            task.isImportant = editedIsImportant
                             saveContext()
                             listRefreshToken += 1
                         }
@@ -610,6 +620,7 @@ struct MainTodoView: View {
 
                 Text(task.safeTitle)
                     .strikethrough(task.isCompleted)
+                    .fontWeight(task.isImportant && !task.isCompleted ? .semibold : .regular)
                     .foregroundColor(task.isCompleted ? .secondary : .primary)
                     .lineLimit(2)
 
@@ -643,6 +654,16 @@ struct MainTodoView: View {
             }
             .padding(.vertical, 2)
         }
+        // 아주 중요 — 행 왼쪽 여백에 강조선. 내용 위치는 그대로라 다른 행과 줄이 맞는다
+        .overlay(alignment: .leading) {
+            if task.isImportant && !task.isCompleted {
+                Capsule()
+                    .fill(Color(hex: "#D85A30"))
+                    .frame(width: 3)
+                    .padding(.vertical, 1)
+                    .offset(x: -10)
+            }
+        }
         .contentShape(Rectangle()) // ⬅️ 이거 매우 중요! 전체 행을 터치 영역으로 지정
         .swipeActions(edge: .leading) {
             if !task.isCompleted {
@@ -651,6 +672,13 @@ struct MainTodoView: View {
                 } label: {
                     Label(task.isToday ? "해제" : "오늘", systemImage: task.isToday ? "xmark" : "trophy")
                 }.tint(task.isToday ? .pink : .teal)
+
+                Button {
+                    toggleImportant(task)
+                } label: {
+                    Label(task.isImportant ? "중요 해제" : "중요",
+                          systemImage: task.isImportant ? "exclamationmark.circle" : "exclamationmark.circle.fill")
+                }.tint(Color(hex: "#D85A30"))
             }
         }
         .swipeActions(edge: .trailing) {
@@ -660,6 +688,7 @@ struct MainTodoView: View {
                  editedDueDate.wrappedValue = task.dueDate
                  editedRewardLevel = RewardLevel(rawValue: Int(task.rewardLevelRaw)) ?? .easy
                  editedTaskType = task.taskType
+                 editedIsImportant = task.isImportant
                  showEditSheet.wrappedValue = true
              } label: {
                  Label("수정", systemImage: "pencil")

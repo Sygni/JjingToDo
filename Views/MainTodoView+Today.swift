@@ -16,7 +16,7 @@ extension MainTodoView {
         return Calendar.current.isDateInToday(due)
     }
 
-    /// 오늘 할 일 — 자동배정 → 마감일있음(빠른순) → 마감일없음 순
+    /// 오늘 할 일 — 자동배정 → 아주 중요 → 마감일있음(빠른순) → 마감일없음 순
     var todayTasks: [TaskEntity] {
         taskEntities
             .filter { !$0.isCompleted && ($0.isToday || isDueToday($0)) }
@@ -24,18 +24,22 @@ extension MainTodoView {
                 let p0 = todayPriority($0)
                 let p1 = todayPriority($1)
                 if p0 != p1 { return p0 < p1 }
-                // 마감일 있는 그룹: 날짜 빠른 순
-                if let d0 = $0.dueDate, let d1 = $1.dueDate { return d0 < d1 }
-                // 마감일 없는 그룹: taskType 순
-                return $0.taskType.rawValue < $1.taskType.rawValue
+                // 같은 그룹 안에서는 마감일 빠른 순, 마감일 없는 건 뒤로
+                switch ($0.dueDate, $1.dueDate) {
+                case let (d0?, d1?): return d0 < d1
+                case (.some, .none): return true
+                case (.none, .some): return false
+                default: return $0.taskType.rawValue < $1.taskType.rawValue
+                }
             }
     }
 
-    /// 0: 자동배정  1: 마감일 있음  2: 마감일 없음(수동등록)
+    /// 0: 자동배정(랜덤 미션은 항상 맨 위)  1: 아주 중요  2: 마감일 있음  3: 마감일 없음
     private func todayPriority(_ task: TaskEntity) -> Int {
         if task.isAutoAssigned { return 0 }
-        if task.dueDate != nil { return 1 }
-        return 2
+        if task.isImportant { return 1 }
+        if task.dueDate != nil { return 2 }
+        return 3
     }
 
     /// 나머지(일반) 태스크
@@ -67,6 +71,9 @@ extension MainTodoView {
             incomplete = incomplete.sorted { $0.rewardLevelRaw > $1.rewardLevelRaw }
         }
 
+        // 아주 중요는 정렬 방식과 상관없이 맨 위 — 각 그룹 안의 순서는 그대로 유지
+        incomplete = incomplete.filter { $0.isImportant } + incomplete.filter { !$0.isImportant }
+
         return incomplete + done
     }
 
@@ -96,6 +103,14 @@ extension MainTodoView {
             task.todayAssignedAt = nil
         }
 
+        try? viewContext.save()
+        listRefreshToken += 1
+    }
+
+    /// 아주 중요 토글
+    @MainActor
+    func toggleImportant(_ task: TaskEntity) {
+        task.isImportant.toggle()
         try? viewContext.save()
         listRefreshToken += 1
     }

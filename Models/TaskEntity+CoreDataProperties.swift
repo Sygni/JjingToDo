@@ -29,6 +29,7 @@ extension TaskEntity {
     @NSManaged public var bonusGranted: Bool
     @NSManaged public var isAutoAssigned: Bool
     @NSManaged public var dueDate: Date?
+    @NSManaged public var isImportant: Bool
 
 }
 
