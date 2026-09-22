@@ -317,6 +317,9 @@ struct BookStackView: View {
         let h = safeCGFloat(hRaw, min: SpineConfig.minThickness, max: SpineConfig.maxThickness)
 
         let textureActive = useCoverTexture && coverImage != nil
+        // 실제 책등 이미지는 직각 모서리 — 진짜 책처럼 보인다. 그 외 모드는 둥글게
+        let showsRealSpine = useCoverTexture && realSpine != nil
+        let corner: CGFloat = showsRealSpine ? 0 : 6
 
         let baseTop    = isKo ? Palette.koTop    : Palette.enTop
         let center = baseTop.adjusted(brightness: tone, saturation: 1.0)
@@ -359,7 +362,7 @@ struct BookStackView: View {
                             )
                         )
                 } else {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    RoundedRectangle(cornerRadius: corner, style: .continuous)
                         .fill(LinearGradient(
                             gradient: Gradient(stops: [
                                 .init(color: edge,   location: 0.0),
@@ -371,8 +374,8 @@ struct BookStackView: View {
                         ))
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Palette.stroke, lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: corner, style: .continuous).stroke(Palette.stroke, lineWidth: 1))
             .overlay(
                 // 책등 특유의 상하 음영 (하이라이트 + 그림자)
                 VStack(spacing: 0) {
@@ -380,27 +383,27 @@ struct BookStackView: View {
                     Spacer(minLength: 0)
                     LinearGradient(colors: [.black.opacity(0.12), .clear], startPoint: .bottom, endPoint: .top).frame(height: 6)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                RoundedRectangle(cornerRadius: corner, style: .continuous)
                     .strokeBorder(
                         LinearGradient(colors: [.white.opacity(h > 24 ? 0.08 : 0.0), .clear], startPoint: .top, endPoint: .bottom),
                         lineWidth: 1.0
                     )
             )
 
-            if !isKo && !textureActive {
+            if !isKo && !textureActive && !showsRealSpine {
                 HStack(spacing: 0) {
                     RoundedRectangle(cornerRadius: 3, style: .continuous)
                         .fill(Palette.enAccent.opacity(0.72)).frame(width: 4)
                     Spacer()
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
             }
 
             // 실제 책등에는 제목이 이미 인쇄되어 있으므로 오버레이 생략
-            if !(useCoverTexture && realSpine != nil) {
+            if !showsRealSpine {
                 Text(book.title ?? "")
                     .font(.system(size: fontSize, weight: .semibold))
                     .foregroundStyle(textColor)
@@ -414,7 +417,7 @@ struct BookStackView: View {
         .clipped()
         .contentShape(Rectangle())
         .shadow(color: .black.opacity(0.07), radius: 3, x: 0, y: 2)
-        .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Color.black.opacity(0.05), lineWidth: 0.8))
+        .overlay(RoundedRectangle(cornerRadius: corner, style: .continuous).stroke(Color.black.opacity(0.05), lineWidth: 0.8))
         .task(id: spineTaskID) {
             realSpine = nil
             coverImage = nil
