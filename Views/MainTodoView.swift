@@ -32,13 +32,6 @@ struct MainTodoView: View {
     
     //Edit
     @State private var taskToEdit: TaskEntity? = nil
-    @State private var editedTitle: String = ""
-    @State private var editedDueDate: Date? = nil
-    @State private var editedRewardLevel: RewardLevel = .easy
-    @State private var editedTaskType: TaskType = .personal
-    @State private var editedIsImportant: Bool = false
-    @State private var showEditSheet = false
-    @State private var showEditDueDatePicker = false
     
     // 20250420 오늘의할일 기능 추가
     @State /*private*/ var showTodayLimitAlert = false
@@ -124,9 +117,6 @@ struct MainTodoView: View {
                                     taskRow(
                                         task,
                                         taskToEdit: $taskToEdit,
-                                        editedTitle: $editedTitle,
-                                        editedDueDate: $editedDueDate,
-                                        showEditSheet: $showEditSheet,
                                         taskToDelete: $taskToDelete,
                                         showDeleteAlert: $showDeleteAlert
                                     )
@@ -204,9 +194,6 @@ struct MainTodoView: View {
                                 taskRow(
                                     task,
                                     taskToEdit: $taskToEdit,
-                                    editedTitle: $editedTitle,
-                                    editedDueDate: $editedDueDate,
-                                    showEditSheet: $showEditSheet,
                                     taskToDelete: $taskToDelete,
                                     showDeleteAlert: $showDeleteAlert
                                 )
@@ -231,8 +218,12 @@ struct MainTodoView: View {
                     //Text("\"\(task.title)\"를 삭제하면 복구할 수 없습니다.")
                     Text("항목을 삭제하면 복구할 수 없습니다.")
                 }
-                .sheet(isPresented: $showEditSheet) {
-                    editSheet
+                .sheet(item: $taskToEdit) { task in
+                    // isPresented 방식은 첫 표시 때 값이 채워지기 전 상태(기본값)로 시트를 만들었다
+                    TaskEditSheet(task: task) {
+                        saveContext()
+                        listRefreshToken += 1
+                    }
                 }
                 .sheet(isPresented: $showGarden) {
                     GardenView()
@@ -511,91 +502,10 @@ struct MainTodoView: View {
         return "\(month)/\(day)(\(symbols[weekday]))"
     }
 
-    // MARK: - Edit Sheet
-    @ViewBuilder
-    private var editSheet: some View {
-        NavigationView {
-            Form {
-                Section("제목") {
-                    TextField("할 일", text: $editedTitle)
-                }
-                Section {
-                    Toggle(isOn: $editedIsImportant) {
-                        Label("아주 중요", systemImage: "exclamationmark.circle")
-                    }
-                    .tint(Color(hex: "#D85A30"))
-                } footer: {
-                    Text("목록 맨 위에 고정되고 왼쪽에 강조선이 붙어요.")
-                }
-                Section("카테고리") {
-                    Picker("카테고리", selection: $editedTaskType) {
-                        ForEach(TaskType.allCases, id: \.self) { type in
-                            Label(type.label, systemImage: type.icon).tag(type)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-                Section("난이도") {
-                    Picker("난이도", selection: $editedRewardLevel) {
-                        Text(RewardLevel.easy.label).tag(RewardLevel.easy)
-                        Text(RewardLevel.normal.label).tag(RewardLevel.normal)
-                        Text(RewardLevel.hard.label).tag(RewardLevel.hard)
-                        Text(RewardLevel.veryHard.label).tag(RewardLevel.veryHard)
-                    }
-                    .pickerStyle(.segmented)
-                }
-                Section("마감일") {
-                    if editedDueDate != nil {
-                        DatePicker(
-                            "날짜",
-                            selection: Binding(
-                                get: { editedDueDate ?? Date() },
-                                set: { editedDueDate = $0 }
-                            ),
-                            displayedComponents: .date
-                        )
-                        Button("날짜 삭제", role: .destructive) {
-                            editedDueDate = nil
-                        }
-                    } else {
-                        Button("날짜 추가") {
-                            editedDueDate = Date()
-                        }
-                    }
-                }
-            }
-            .navigationTitle("할 일 수정")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("취소") { showEditSheet = false }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("저장") {
-                        if let task = taskToEdit {
-                            task.title = editedTitle
-                            task.dueDate = editedDueDate
-                            task.rewardLevelRaw = Int16(editedRewardLevel.rawValue)
-                            task.taskType = editedTaskType
-                            task.isImportant = editedIsImportant
-                            saveContext()
-                            listRefreshToken += 1
-                        }
-                        showEditSheet = false
-                    }
-                }
-            }
-        }
-        .presentationDetents([.medium])
-    }
-
     // MARK: - 공통 셀 UI (Today·Normal 공유)
     private func taskRow(
         _ task: TaskEntity,
         taskToEdit: Binding<TaskEntity?>,
-        editedTitle: Binding<String>,
-        editedDueDate: Binding<Date?>,
-        showEditSheet: Binding<Bool>,
         taskToDelete: Binding<TaskEntity?>,
         showDeleteAlert: Binding<Bool>
     ) -> some View {
@@ -683,13 +593,7 @@ struct MainTodoView: View {
         }
         .swipeActions(edge: .trailing) {
              Button {
-                 taskToEdit.wrappedValue = task
-                 editedTitle.wrappedValue = task.safeTitle
-                 editedDueDate.wrappedValue = task.dueDate
-                 editedRewardLevel = RewardLevel(rawValue: Int(task.rewardLevelRaw)) ?? .easy
-                 editedTaskType = task.taskType
-                 editedIsImportant = task.isImportant
-                 showEditSheet.wrappedValue = true
+                 taskToEdit.wrappedValue = task   // 값은 수정 시트가 이 할 일에서 직접 읽는다
              } label: {
                  Label("수정", systemImage: "pencil")
              }
@@ -808,6 +712,104 @@ struct MainTodoView: View {
         }
     }
     
+}
+
+// MARK: - 할 일 수정 시트
+
+/// 시트를 할 일 자체에 묶고(.sheet(item:)) 값을 여기서 초기화해야
+/// 처음 열 때도 현재 값이 확실히 채워진다
+struct TaskEditSheet: View {
+    let task: TaskEntity
+    let onSave: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var title: String
+    @State private var dueDate: Date?
+    @State private var rewardLevel: RewardLevel
+    @State private var taskType: TaskType
+    @State private var isImportant: Bool
+
+    init(task: TaskEntity, onSave: @escaping () -> Void) {
+        self.task = task
+        self.onSave = onSave
+        _title = State(initialValue: task.safeTitle)
+        _dueDate = State(initialValue: task.dueDate)
+        _rewardLevel = State(initialValue: RewardLevel(rawValue: Int(task.rewardLevelRaw)) ?? .easy)
+        _taskType = State(initialValue: task.taskType)
+        _isImportant = State(initialValue: task.isImportant)
+    }
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("제목") {
+                    TextField("할 일", text: $title)
+                }
+                Section {
+                    Toggle(isOn: $isImportant) {
+                        Label("아주 중요", systemImage: "exclamationmark.circle")
+                    }
+                    .tint(Color(hex: "#D85A30"))
+                } footer: {
+                    Text("목록 맨 위에 고정되고 왼쪽에 강조선이 붙어요.")
+                }
+                Section("카테고리") {
+                    Picker("카테고리", selection: $taskType) {
+                        ForEach(TaskType.allCases, id: \.self) { type in
+                            Label(type.label, systemImage: type.icon).tag(type)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+                Section("난이도") {
+                    Picker("난이도", selection: $rewardLevel) {
+                        ForEach(RewardLevel.allCases, id: \.self) { level in
+                            Text(level.label).tag(level)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+                Section("마감일") {
+                    if dueDate != nil {
+                        DatePicker(
+                            "날짜",
+                            selection: Binding(
+                                get: { dueDate ?? Date() },
+                                set: { dueDate = $0 }
+                            ),
+                            displayedComponents: .date
+                        )
+                        Button("날짜 삭제", role: .destructive) {
+                            dueDate = nil
+                        }
+                    } else {
+                        Button("날짜 추가") {
+                            dueDate = Date()
+                        }
+                    }
+                }
+            }
+            .navigationTitle("할 일 수정")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("취소") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("저장") {
+                        task.title = title
+                        task.dueDate = dueDate
+                        task.rewardLevelRaw = Int16(rewardLevel.rawValue)
+                        task.taskType = taskType
+                        task.isImportant = isImportant
+                        onSave()
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
 }
 
 extension UIApplication {
