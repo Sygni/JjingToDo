@@ -317,9 +317,10 @@ struct BookStackView: View {
         let h = safeCGFloat(hRaw, min: SpineConfig.minThickness, max: SpineConfig.maxThickness)
 
         let textureActive = useCoverTexture && coverImage != nil
-        // 실제 책등 이미지는 직각 모서리 — 진짜 책처럼 보인다. 그 외 모드는 둥글게
         let showsRealSpine = useCoverTexture && realSpine != nil
-        let corner: CGFloat = showsRealSpine ? 0 : 6
+        // 책등 이미지 모드('책등에 표지 반영')에서는 이미지가 없는 책까지 모두 직각 — 진짜 책처럼.
+        // 음영·테두리·그림자는 모두 이 값을 따라가므로 함께 직각이 된다.
+        let corner: CGFloat = useCoverTexture ? 0 : 6
 
         let baseTop    = isKo ? Palette.koTop    : Palette.enTop
         let center = baseTop.adjusted(brightness: tone, saturation: 1.0)
@@ -395,7 +396,7 @@ struct BookStackView: View {
 
             if !isKo && !textureActive && !showsRealSpine {
                 HStack(spacing: 0) {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    RoundedRectangle(cornerRadius: corner == 0 ? 0 : 3, style: .continuous)
                         .fill(Palette.enAccent.opacity(0.72)).frame(width: 4)
                     Spacer()
                 }
